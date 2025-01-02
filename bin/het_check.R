@@ -7,7 +7,6 @@
 # thresholds, the other with the invalid individuals.The name of the output is 
 # based on the input (adding '.valides' and '.nonvalides')
 
-# Dependencies 'optparse'
 if(!require(optparse, quietly = T)) install.packages(optparse) 
 if(!require(ggplot2, quietly = T)) install.packages(ggplot2) 
 
@@ -29,19 +28,17 @@ option_list <- list(
 
     make_option(c("-v", "--verbose"),
                 type = "logical",
-                default = TRUE,
-                help = "Print information during execution (on by default)")
+                default = FALSE,
+                help = "Print information during execution (off by default)")
 );
 
 opt <- parse_args(OptionParser(option_list = option_list))
 
 # Reading the file with the clinical data
-if(file.exists(opt$i)){
+if(file.exists(opt$i)) {
     if(opt$v) print(paste0("Reading .het file", opt$i))
     het <- read.table(opt$i, header = T)
-} else {
-    stop(paste0("File '", opt$i, "' does not exist."))
-}
+} else { stop(paste0("File '", opt$i, "' does not exist.")) }
 
 # Computing the F coeff mean and sd
 het.moy <- mean(het$F)
