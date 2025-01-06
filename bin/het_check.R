@@ -63,11 +63,11 @@ if(opt$f == "high") {
     valides     <- subset(het, filter == "valid")
     non.valides <- subset(het, filter == "low_het" | filter == "high_het")
 } else {
-    stop(paste0("Option -f--filter should either 'low', 'high' of 'both', current value '", opt$f, "'"))
+    stop(paste0("Option -f / --filter should either 'low', 'high' of 'both', current value '", opt$f, "'"))
 }
 
 # Plot
-png(".plots/PAMPERO_heterozygosity.png", units = in, width = 9, height = 7, res = 350)
+png(paste0(opt$i, '.png'), units = in, width = 9, height = 7, res = 350)
     ggplot(het, aes(x = F, fill = filter)) +
         geom_histogram(col = black, bins = 50) + 
         scale_fill_manual(values = c("#009988", "#B2182B", "#4393C3")) + 
