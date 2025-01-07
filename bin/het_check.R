@@ -49,8 +49,8 @@ if(opt$v) print(paste0("F coeff SD:    ", het.sd, "\n"))
 # ! Heterozygosity and F coeff are inversed
 # F coeff = 1 - (obs het  expected het)
 het$filter <- "valid"
-het$filter[het$F < mean(het$F) + 3*sd(het$F)] <- "low_het"
-het$filter[het$F > mean(het$F) - 3*sd(het$F)] <- "high_het"
+het$filter[het$F > mean(het$F) + 3*sd(het$F)] <- "low_het"
+het$filter[het$F < mean(het$F) - 3*sd(het$F)] <- "high_het"
 
 # Get the valid and nonvalid samples (3 SDs from the group mean)
 if(opt$f == "high") {
@@ -67,9 +67,9 @@ if(opt$f == "high") {
 }
 
 # Plot
-png(paste0(opt$i, '.png'), units = in, width = 9, height = 7, res = 350)
+pdf(paste0(opt$i, '.pdf'))
     ggplot(het, aes(x = F, fill = filter)) +
-        geom_histogram(col = black, bins = 50) + 
+        geom_histogram(col = "black", bins = 50) + 
         scale_fill_manual(values = c("#009988", "#B2182B", "#4393C3")) + 
         theme_bw() + ggtitle("GWAS QC - Heterozygosity")
 dev.off()

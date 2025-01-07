@@ -27,6 +27,8 @@ This readme contains step-by-step instructions to perform a Genome Wide Associat
 
  - R 
 
+ - The R packages 'optparse' and 'ggplot2'
+
 ## The Pipeline
 
 Setting up the environment:
@@ -94,13 +96,6 @@ The PCA results are written to:
  - ./test_dataset/results/EUR_height_QCed.eigenval
 
  - ./test_dataset/results/EUR_height_QCed.eigenvec
-
-#### Looking at the PCA:
-
-```shell
-Rscript ./bin/PCA.R -i ${out_folder}/${input_basename}_QCed.eigenvec -f ${out_folder}/${input_basename}_QCed.fam -v
-```
-
 
 ### GWAS association 
 

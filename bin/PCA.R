@@ -1,7 +1,6 @@
 # Script to plot a PCA based on a .eigenvec file produced with plink (option --pca).
 
 # This script plots the PCA in pdf and png files.
-
 if(!require(optparse, quietly = T)) install.packages(optparse) 
 if(!require(ggplot2, quietly = T)) install.packages(ggplot2) 
 
@@ -35,22 +34,28 @@ opt <- parse_args(OptionParser(option_list = option_list))
 
 # Reading the file with the eigenvec data:
 if(file.exists(opt$i)) {
-    if(opt$v) print(paste0("Reading .eigenvec file: ", opt$i))
+    if(opt$v) print(paste0("Reading the .eigenvec file: ", opt$i))
     eigenvec <- read.table(file = opt$i, header = F, sep = " ", stringsAsFactors = F)
-    colnames(eigenvec_mx) <- c("FID", "IID", paste0("PC", c(1:ncol(eigenvec_mx))))
+    colnames(eigenvec) <- c("FID", "IID", paste0("PC", c(1:(ncol(eigenvec)-2))))
 } else { stop(paste0("File '", opt$i, "' does not exist.")) }
 
 # If a .fam file is provided, we will color the PCA with the phenotype information:
 if(file.exists(opt$f)) {
-    if(opt$v) print(paste0("Reading .fam file: ", opt$f))
-    fam <- read.table(file = opt$f, header = T, sep = " ", stringsAsFactors = F)
-
-    eigenvec$phenotype <-  
+    if(opt$v) print(paste0("Reading the .fam file: ", opt$f))
+    fam <- read.table(file = opt$f, header = F, sep = " ", stringsAsFactors = F)
+    colnames(fam) <- c("FID", "IID", "FATHER", "MOTHER", "SEX", "PHENO")
+    # Reordering the fam file according to the eigenvec, to extract the phenotypes:
+    eigenvec$phenotype <- fam$PHENO[match(x = eigenvec$IID, table = fam$IID)]
+    eigenvec$sex <- fam$SEX[match(x = eigenvec$IID, table = fam$IID)]
 } else { eigenvec$phenotype <- "no_phenotype" }
 
-
-
-
-
-gg_pca <- ggplot(eigenvec_mx, aes(x = PC1, y = PC2, col = design)) + 
+gg_pca <- ggplot(eigenvec, aes(x = PC1, y = PC2, col = phenotype)) + 
             geom_point() + theme_bw()
+
+gg_pca_sex <- ggplot(eigenvec, aes(x = PC1, y = PC2, col = sex)) + 
+                geom_point() + theme_bw()
+
+pdf(paste0(opt$o,".pdf"))
+    print(gg_pca)
+    print(gg_pca_sex)
+dev.off()
