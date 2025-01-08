@@ -2,13 +2,9 @@
 
 ## Introduction
 
-This readme contains step-by-step instructions to perform a Genome Wide Association Study (GWAS):
+Nextflow pipeline to perform Genome Wide Association Studies (GWAS) and/or Rare Variants Association Tests (RVAT). This Readme contains step-by-step instructions to configure and run the pipeline.
 
-- [QC Steps](#gwas-quality-control)
-
-- [GWAS Association](#gwas-association)
-
-- [Downstream Analysis](#downstream-analysis)
+The pipeline works for binary and continuous traits and uses SAIGE to perform the association tests.
 
 ## Table of Contents
 
@@ -17,29 +13,34 @@ This readme contains step-by-step instructions to perform a Genome Wide Associat
 3. [Dependencies](#dependencies)
 3. [The Pipeline](#the-pipeline)
     - [Input data](#input-data)
-    - [GWAS Quality Control](#gwas-quality-control)
+    - [Quality Control](#quality-control)
     - [GWAS association](#gwas-association)
     - [Downstream analysis](#downstream-analysis)
 
 ## Dependencies
 
- - plink v1.9
+The following tools need to be installed on your machine: 
+
+ - [plink v1.9](https://www.cog-genomics.org/plink/1.9/)
 
  - R 
+    - The R packages 'optparse' and 'ggplot2'
 
- - The R packages 'optparse' and 'ggplot2'
+ - SAIGE 
+
+All dependencies are available inside a Singularity image, that can be build from the recipe provided within this repository [HCL-GWAS.def](./HCL-GWAS.def):
+
+```shell
+singularity build HCL-GWAS.sif HCL-GWAS.def
+```
+
+*Note: The scripts were developed and tested on Linux (Debian release 11) using nextflow v22.04.5 and R v4.4.1*
 
 ## The Pipeline
 
-Setting up the environment:
+The pipeline can be launched from [HCL-GWAS.nf](./HCL-GWAS.nf).
 
-```shell
-PLINK="/srv/scratch/chu-lyon.fr/molitorco/scripts/plink1.9/plink"
-
-input_folder="./test_dataset/"
-input_basename="EUR_height"
-out_folder="./test_dataset/results/"
-```
+You will need to change values in the configuration file [default.conf](./confs/default.conf) to adjust the QC and association steps to your own needs.
 
 ### Input data
 
@@ -55,47 +56,35 @@ More information about the formats can be found in the Plink documentation: http
 
 A test dataset of simulated height in European samples from the 1000 Genomes Project is available in "./test_dataset/".
 
-### GWAS Quality Control
+### Quality Control
 
-#### Standard QC on the genotype data:
+#### QC on the genotype data:
 
-The first step is to filter individuals and variants with low genotyping rates:
+The first step filters performs standard GWAS quality control:
 
- - If needed: remove indivuals that must be filtered, for example because of bad quality or removed consent (--remove)
+ - Remove individuals with >5% missing genotypes (can be changed with 'qc_mind')
 
- - Remove individuals with 5% missing genotypes (--mind 0.05)
+ - Remove individuals listed in the file designed by 'qc_remove' (keep *qc_remove = ""* if you do not wish to filter any individual)
 
- - Remove variants with 5% missing genotypes (--geno 0.05)
+ - Remove individuals with extreme heterozygosity ('qc_hetfilter'):
+    - 'low':  remove individuals with a F coefficient > 3 SDs from the cohort's mean.
+    - 'high': remove individuals with a F coefficient < 3 SDs from the cohort's mean.
+    - 'both': applies both of the above.
+    - *note*: the F coefficient is inversely correlated with heterozygosity (so a 'high' heterozygosity corresponds to a low F value).
+
+ - Remove variants with 5% missing genotypes (can be changed with 'qc_geno')
 
  - Produce the eigenvectors and eigenvalues of the genomic PCA
 
-This will generated a new set of plink files with the *_QCed* suffix (--out).
+ - Remove variants based on their Minor Allele Frequency:
+    - For the GWAS: variants with a MAF < 'qc_maf'
+    - For the RVAT: variants with a MAF > 'rvat_maf'
 
-```shell 
-${PLINK} \
-    --bfile ${input_folder}/${input_basename} \
-    --geno 0.05 \
-    --mind 0.05 \
-    --pca \
-    --allow-no-sex \
-    --make-bed \
-    --out ${out_folder}/${input_basename}_QCed
-    # --remove /path/to/samples_to_exclude.txt \
-```
+This pipeline will output the following files:
 
-Plink will output a log detailing the filtering, in the case of the test dataset:
- 
- - 14 people removed due to missing genotype data (--mind).
+ - <basename>_QCed.{bim,bed,fam}: contains the variants and individuals that passed the QC step
 
- - 1 variant removed due to missing genotype data (--geno).
-
- - Total genotyping rate in remaining samples is 0.999816.
-
-The PCA results are written to: 
-
- - ./test_dataset/results/EUR_height_QCed.eigenval
-
- - ./test_dataset/results/EUR_height_QCed.eigenvec
+ - ./plots/
 
 ### GWAS association 
 

@@ -3,14 +3,14 @@
 nextflow.enable.dsl = 2
 
 process BaseQC {
+    publishDir "${params.outdir}/logs/",  pattern: "BaseQC.log", mode: 'copy'
+
     input:
         tuple val(plink_basename), path(plink_files)
         path(qc_remove)
 
     output:
-        tuple val("${plink_basename}_baseQC"), path("${plink_basename}_baseQC.bim"), path("${plink_basename}_baseQC.bed"), path("${plink_basename}_baseQC.fam"), emit: plink_baseQC
-        path("${plink_basename}_baseQC.eigenvec"), emit: eigenvec
-        path("${plink_basename}_baseQC.eigenval"), emit: eigenval
+        tuple val("${plink_basename}_baseQC"), path("${plink_basename}_baseQC.{bim,bed,fam}"), emit: plink_baseQC
         path("BaseQC.log")
 
     script:
@@ -24,41 +24,18 @@ process BaseQC {
             --bfile ${plink_basename} \
             --geno ${params.qc_geno} \
             --mind ${params.qc_mind} \
-            --maf  ${params.qc_maf} \
             ${remove_cmd} \
-            --pca \
             --allow-no-sex \
             --make-bed \
             --out ${plink_basename}_baseQC > BaseQC.log
         """
 }
 
-process PlotPCA {
-    publishDir "${params.outdir}/plots/", mode: 'copy'
-
-    input:
-        tuple val(baseqc_basename), path("${baseqc_basename}.bim"), path("${baseqc_basename}.bed"), path("${baseqc_basename}.fam")
-        path(eigenvec)
-
-    output:
-        path("${baseqc_basename}_PCA.pdf")
-
-    script:
-        """
-        set -eo pipefail
-
-        ${params.tools.Rscript} ${projectDir}/bin/PCA.R \
-            -i ${eigenvec} \
-            -f ${baseqc_basename}.fam \
-            -o ${baseqc_basename}_PCA
-        """
-}
-
 process Pruning {
-    publishDir "${params.outdir}/", mode: 'copy'
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "$it" }, mode: 'copy'
 
     input:
-        tuple val(baseqc_basename), path("${baseqc_basename}.bim"), path("${baseqc_basename}.bed"), path("${baseqc_basename}.fam")
+        tuple val(baseqc_basename), path(baseqc_files)
 
     output:
         path("${baseqc_basename}.prune.in"), emit: prune_in
@@ -77,10 +54,10 @@ process Pruning {
 }
 
 process HetCoeff {
-    publishDir "${params.outdir}/", mode: 'copy'
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "$it" }, mode: 'copy'
 
     input:
-        tuple val(baseqc_basename), path("${baseqc_basename}.bim"), path("${baseqc_basename}.bed"), path("${baseqc_basename}.fam")
+        tuple val(baseqc_basename), path(baseqc_files)
         path(prune_in)
 
     output:
@@ -120,16 +97,19 @@ process HetFilter {
         """
 }
 
-process CreateOutput {
-    publishDir "${params.outdir}/", mode: 'copy'
+process CreateOutputGWAS {
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "$it" }, mode: 'copy'
 
     input:
-        tuple val(baseqc_basename), path("${baseqc_basename}.bim"), path("${baseqc_basename}.bed"), path("${baseqc_basename}.fam")
+        tuple val(baseqc_basename), path(baseqc_files)
         path(valides)
 
     output:
-        tuple val("${baseqc_basename}ed"), path("${baseqc_basename}ed.bim"), path("${baseqc_basename}ed.bed"), path("${baseqc_basename}ed.fam"), emit: plink_QCed
-        
+        tuple val("${baseqc_basename}ed"), path("${baseqc_basename}ed.{bim,bed,fam}"), emit: plink_QCed
+        path("${baseqc_basename}ed.eigenval"), emit: eigenval
+        path("${baseqc_basename}ed.eigenvec"), emit: eigenvec
+        path("CreateOutputGWAS.log")
+
     script:
         """
         set -eo pipefail
@@ -137,7 +117,32 @@ process CreateOutput {
         ${params.tools.plink} \
             --bfile ${baseqc_basename} \
             --keep ${valides} \
+            --maf ${params.gwas_maf} \
+            --allow-no-sex \
+            --pca \
             --make-bed \
-            --out ${baseqc_basename}ed
+            --out ${baseqc_basename}ed > CreateOutputGWAS.log
+        """
+}
+
+
+process PlotPCA {
+    publishDir "${params.outdir}/plots/", mode: 'copy'
+
+    input:
+        tuple val(qced_basename), path(qced_files)
+        path(eigenvec)
+
+    output:
+        path("${qced_basename}_PCA.pdf")
+
+    script:
+        """
+        set -eo pipefail
+
+        ${params.tools.Rscript} ${projectDir}/bin/PCA.R \
+            -i ${eigenvec} \
+            -f ${qced_basename}.fam \
+            -o ${qced_basename}_PCA
         """
 }
