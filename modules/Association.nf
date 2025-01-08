@@ -34,7 +34,7 @@ process GWASFitNullModel {
         GMMATmodel = "${plink_basename}_saige.rda"
 
         invnorm = "--invNormalize=FALSE"
-        if(params.rvat_trait == "quantitative") invnorm = "--invNormalize=TRUE"
+        if(params.saige_trait == "quantitative") invnorm = "--invNormalize=TRUE"
 
         """
         set -eo pipefail
@@ -47,7 +47,7 @@ process GWASFitNullModel {
             --qCovarColList=${params.saige_qcovar} \
             --sampleIDColinphenoFile=IID \
             ${invnorm} \
-            --traitType=${params.rvat_trait} \
+            --traitType=${params.saige_trait} \
             --outputPrefix=${plink_basename}_saige \
             --nThreads=${task.cpus} \
             --IsOverwriteVarianceRatioFile=TRUE
