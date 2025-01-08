@@ -34,9 +34,9 @@ option_list <- list(
 
 opt <- parse_args(OptionParser(option_list = option_list))
 
-# Reading the file with the clinical data
+# Reading the .het file
 if(file.exists(opt$i)) {
-    if(opt$v) print(paste0("Reading .het file", opt$i))
+    if(opt$v) print(paste0("Reading the .het file", opt$i))
     het <- read.table(opt$i, header = T)
 } else { stop(paste0("File '", opt$i, "' does not exist.")) }
 

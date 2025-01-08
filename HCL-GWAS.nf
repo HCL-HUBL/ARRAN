@@ -11,9 +11,13 @@ include { HetCoeff }            from './modules/QC.nf'
 include { HetFilter }           from './modules/QC.nf'
 include { CreateOutputGWAS }    from './modules/QC.nf'
 
+include { CreatePhenoFile }     from './modules/Association.nf'
+include { GWASFitNullModel }    from './modules/Association.nf'
+
 
 // Initialising the options with default values:
 params.plink_fileset = ""                 // The path to the plink fileset (/path/to/example.{bim,bed,fam})
+params.covar_file    = ""
 params.outdir        = "${launchDir}"     // The output directory where the outputs will be stored
 params.genome_build  = "hg19"             // The genome build (not used for now)
 
@@ -33,6 +37,7 @@ params.rvat_maf      = 0.01               // Variants with a MAF > 'rvat_maf' wi
 
 // Checking input values:
 if(params.plink_fileset == "")              error("\nERROR in config: 'plink_fileset' is required")
+if(params.covar_file == "")                 error("\nERROR in config: 'covar_file' is required")
 
 if(params.qc_mind < 0)                      error("\nERROR in config: 'qc_mind' must be >= 0")
 if(params.qc_geno < 0)                      error("\nERROR in config: 'qc_geno' must be >= 0")
@@ -49,6 +54,12 @@ if(params.gwas_maf < 0)                     error("\nERROR in config: 'gwas_maf'
 
 if(params.saige_trait != "binary" &&
    params.saige_trait != "quantitative")    error("\nERROR in config: 'saige_trait' must be 'binary' or 'quantitative'")
+
+
+// Initialising Channels based on params:
+plink_ch        = Channel.fromFilePairs(params.plink_fileset, size: 3)
+covar_file_ch   = Channel.fromPath(params.covar_file)
+remove_ch       = params.qc_remove ? Channel.fromPath(params.qc_remove) : []
 
 
 // Subworkflows QC & GWAS & RVAT:
@@ -74,15 +85,14 @@ workflow QC {
 workflow SAIGE_GWAS {
     take:
         plink_QCed
+        covar_file
+    
+    main:
+        CreatePhenoFile(plink_QCed, covar_file)
+        GWASFitNullModel(plink_QCed, CreatePhenoFile.out.phenoFile)
 }
-
-workflow SAIGE_RVAT {
-
-}
-
 
 workflow {
-    plink_ch = Channel.fromFilePairs(params.plink_fileset, size: 3)
-    params.qc_remove == "" ? remove_ch = [] : remove_ch = Channel.fromPath(params.qc_remove)
-    plink_QCed = QC(plink_ch, remove_ch)
+    plink_QCed_ch = QC(plink_ch, remove_ch)
+    SAIGE_GWAS(plink_QCed_ch, covar_file_ch)
 }

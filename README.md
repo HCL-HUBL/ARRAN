@@ -54,7 +54,7 @@ To run this pipeline you will need genotyping data in the *plink* format:
 
 More information about the formats can be found in the Plink documentation: https://www.cog-genomics.org/plink/1.9/formats.
 
-A test dataset of simulated height in European samples from the 1000 Genomes Project is available in "./test_dataset/".
+You will also need a [covariates file](https://www.cog-genomics.org/plink/1.9/input#covar) which **must** have a header.
 
 ### Quality Control
 

@@ -2,6 +2,26 @@
 
 nextflow.enable.dsl = 2
 
+process CreatePhenoFile {
+    input:
+        tuple val(plink_basename), path(plink_files)
+        path(covar_file)
+    
+    output:
+        path(phenoFile), emit: phenoFile
+    
+    script:
+        phenoFile = "saige_phenofile.tsv"
+
+        """
+        set -eo pipefail
+
+        ${params.tools.Rscript} ${projectDir}/bin/create_phenoFile.R \
+            -f ${plink_basename}.fam \
+            -c ${covar_file}
+        """
+}
+
 process GWASFitNullModel {
     input:
         tuple val(plink_basename), path(plink_files)
@@ -12,12 +32,14 @@ process GWASFitNullModel {
 
     script:
         GMMATmodel = "${plink_basename}_saige.rda"
-        params.trait == "quantitative" ? invnorm = "--invNormalize=TRUE" : invnorm = "--invNormalize=FALSE"
+
+        invnorm = "--invNormalize=FALSE"
+        if(params.rvat_trait == "quantitative") invnorm = "--invNormalize=TRUE"
 
         """
         set -eo pipefail
 
-        ${params.tools.Rscript} ${params.tools.SAIGE}/extdata/step1_fitNULLGLMM.R \
+        ${params.tools.Rscript} ${params.tools.step1_fitNULLGLMM} \
             --plinkFile ${plink_basename} \
             --phenoFile ${phenofile} \
             --phenoCol=PHENOTYPE \
