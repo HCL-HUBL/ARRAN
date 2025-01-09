@@ -32,7 +32,7 @@ process BaseQC {
 }
 
 process Pruning {
-    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "$it" }, mode: 'copy'
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
 
     input:
         tuple val(baseqc_basename), path(baseqc_files)
@@ -54,7 +54,7 @@ process Pruning {
 }
 
 process HetCoeff {
-    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "$it" }, mode: 'copy'
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
 
     input:
         tuple val(baseqc_basename), path(baseqc_files)
@@ -77,7 +77,7 @@ process HetCoeff {
 }
 
 process HetFilter {
-    publishDir "${params.outdir}/", saveAs: { it.endsWith("valides") ? "$it" : "plots/$it" }, mode: 'copy'
+    publishDir "${params.outdir}/", saveAs: { it.endsWith("valides") ? "QC/$it" : "plots/$it" }, mode: 'copy'
 
     input:
         path(geno_het)
@@ -98,7 +98,7 @@ process HetFilter {
 }
 
 process CreateOutputGWAS {
-    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "$it" }, mode: 'copy'
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
 
     input:
         tuple val(baseqc_basename), path(baseqc_files)

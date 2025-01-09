@@ -45,9 +45,12 @@ if(file.exists(opt$f)) {
     fam <- read.table(file = opt$f, header = F, sep = " ", stringsAsFactors = F)
     colnames(fam) <- c("FID", "IID", "FATHER", "MOTHER", "SEX", "PHENO")
     # Reordering the fam file according to the eigenvec, to extract the phenotypes:
-    eigenvec$phenotype <- fam$PHENO[match(x = eigenvec$IID, table = fam$IID)]
+    eigenvec$phenotype <- as.factor(fam$PHENO[match(x = eigenvec$IID, table = fam$IID)])
     eigenvec$sex <- as.factor(fam$SEX[match(x = eigenvec$IID, table = fam$IID)])
-} else { eigenvec$phenotype <- "no_phenotype" }
+} else { 
+    eigenvec$phenotype <- "no_phenotype_info"
+    eigenvec$sex <- "no_sex_info"
+}
 
 gg_pca <- ggplot(eigenvec, aes(x = PC1, y = PC2, col = phenotype)) + 
             geom_point() + theme_bw()

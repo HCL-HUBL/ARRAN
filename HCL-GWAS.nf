@@ -12,7 +12,8 @@ include { HetFilter }           from './modules/QC.nf'
 include { CreateOutputGWAS }    from './modules/QC.nf'
 
 include { CreatePhenoFile }     from './modules/Association.nf'
-include { GWASFitNullModel }    from './modules/Association.nf'
+include { SaigeFitNullModel }   from './modules/Association.nf'
+include { SaigeSingleAssoc }    from './modules/Association.nf'
 
 
 // Initialising the options with default values:
@@ -89,7 +90,11 @@ workflow SAIGE_GWAS {
     
     main:
         CreatePhenoFile(plink_QCed, covar_file)
-        GWASFitNullModel(plink_QCed, CreatePhenoFile.out.phenoFile)
+        SaigeFitNullModel(plink_QCed, CreatePhenoFile.out.phenoFile)
+        SaigeSingleAssoc(plink_QCed, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr)
+
+    emit:
+        SaigeSingleAssoc.out.saige_sv_output
 }
 
 workflow {

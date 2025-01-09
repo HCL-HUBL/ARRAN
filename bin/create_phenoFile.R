@@ -22,6 +22,11 @@ option_list <- list(
                 default = "",
                 help = "Full path to plink .covariates file.",
                 metavar = "character"),
+    
+    make_option(c("-b", "--binary"),
+                type = "logical",
+                default = FALSE,
+                help = "Use this flag for binary phenotypes"),
 
     make_option(c("-v", "--verbose"),
                 type = "logical",
@@ -44,7 +49,17 @@ if(file.exists(opt$c)) {
     covar <- read.table(opt$c, header = T, sep = "\t")
 } else { stop(paste0("File '", opt$c, "' does not exist.")) }
 
-# Adding phenotypes to covar:
-covar$PHENOTYPE <- fam$PHENOTYPE[match(x = covar$IID, table = fam$IID)]
+# Adding covars to fam to create the phenoFile:
+phenoFile <- merge(x = fam, y = covar,
+                   all.x = T, all.y = F,
+                   by = "IID")
+#covar$PHENOTYPE <- fam$PHENOTYPE[match(x = covar$IID, table = fam$IID)]
 
-write.table(x = covar, file = "saige_phenofile.tsv", quote = F, sep = "\t", row.names = F)
+# SAIGE expects binary phenotypes to be between 0 and 1:
+# While the .fam format expects 1 for controls and 2 for cases:
+if(opt$b) {
+    phenoFile$PHENOTYPE[phenoFile$PHENOTYPE == 1] <- 0
+    phenoFile$PHENOTYPE[phenoFile$PHENOTYPE == 2] <- 1
+}
+
+write.table(x = phenoFile, file = "saige_phenofile.tsv", quote = F, sep = "\t", row.names = F)
