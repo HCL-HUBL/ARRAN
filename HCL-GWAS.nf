@@ -2,7 +2,6 @@
 
 nextflow.enable.dsl = 2
 
-
 // Importing Processes from modules:
 include { BaseQC }              from './modules/QC.nf'
 include { PlotPCA }             from './modules/QC.nf'
@@ -12,9 +11,9 @@ include { HetFilter }           from './modules/QC.nf'
 include { CreateOutputGWAS }    from './modules/QC.nf'
 
 include { CreatePhenoFile }     from './modules/Association.nf'
+include { CreateSparseGRM }     from './modules/Association.nf'
 include { SaigeFitNullModel }   from './modules/Association.nf'
 include { SaigeSingleAssoc }    from './modules/Association.nf'
-
 
 // Initialising the options with default values:
 params.plink_fileset = ""                 // The path to the plink fileset (/path/to/example.{bim,bed,fam})
@@ -78,6 +77,7 @@ workflow QC {
         HetFilter(HetCoeff.out.het)
         CreateOutputGWAS(plink_baseQC_ch, HetFilter.out.valides)
         PlotPCA(CreateOutputGWAS.out.plink_QCed, CreateOutputGWAS.out.eigenvec)
+        CreateSparseGRM(CreateOutputGWAS.out.plink_QCed_pruned)
 
     emit:
         CreateOutputGWAS.out.plink_QCed

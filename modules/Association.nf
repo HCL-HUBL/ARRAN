@@ -26,6 +26,32 @@ process CreatePhenoFile {
         """
 }
 
+process CreateSparseGRM {
+    publishDir "${params.outdir}/saige/", mode: 'copy'
+    
+    input:
+        tuple val(plink_pruned_basename), path(plink_pruned_files)
+
+    output:
+        path(sampleIDs), emit: sampleIDs
+        path(sparseGRM), emit: sparseGRM
+
+    script:
+        sampleIDs = "${plink_pruned_basename}*.sparseGRM.mtx.sampleIDs.txt"
+        sparseGRM = "${plink_pruned_basename}*.sparseGRM.mtx"
+
+        """
+        set -eo pipefail
+
+        ${params.tools.Rscript} ${params.tools.saige_folder}/createSparseGRM.R       \
+            --plinkFile=${plink_pruned_basename} \
+            --nThreads=${task.cpus} \
+            --outputPrefix=${plink_pruned_basename} \
+            --numRandomMarkerforSparseKin=2000 \
+            --relatednessCutoff=0.125
+        """
+}
+
 process SaigeFitNullModel {
     publishDir "${params.outdir}/saige/", mode: 'copy'
 
@@ -47,7 +73,7 @@ process SaigeFitNullModel {
         """
         set -eo pipefail
 
-        ${params.tools.Rscript} ${params.tools.step1_fitNULLGLMM} \
+        ${params.tools.Rscript} ${params.tools.saige_folder}/step1_fitNULLGLMM.R \
             --plinkFile ${plink_basename} \
             --phenoFile ${phenofile} \
             --phenoCol=PHENOTYPE \
@@ -79,7 +105,7 @@ process SaigeSingleAssoc {
         """
         set -eo pipefail
 
-        ${params.tools.Rscript} ${params.tools.step2_SPAtests} \
+        ${params.tools.Rscript} ${params.tools.saige_folder}/step2_SPAtests.R \
             --bedFile=${plink_basename}.bed \
             --bimFile=${plink_basename}.bim \
             --famFile=${plink_basename}.fam \

@@ -106,6 +106,7 @@ process CreateOutputGWAS {
 
     output:
         tuple val("${baseqc_basename}ed"), path("${baseqc_basename}ed.{bim,bed,fam}"), emit: plink_QCed
+        tuple val("${baseqc_basename}ed_pruned"), path("${baseqc_basename}ed_pruned.{bim,bed,fam}"), emit: plink_QCed_pruned
         path("${baseqc_basename}ed.eigenval"), emit: eigenval
         path("${baseqc_basename}ed.eigenvec"), emit: eigenvec
         path("CreateOutputGWAS.log")
@@ -113,6 +114,16 @@ process CreateOutputGWAS {
     script:
         """
         set -eo pipefail
+
+        # Creating the pruned set:
+        ${params.tools.plink} \
+            --bfile ${baseqc_basename} \
+            --keep ${valides} \
+            --extract ${prune_in} \
+            --maf ${params.gwas_maf} \
+            --allow-no-sex \
+            --make-bed \
+            --out ${baseqc_basename}ed_pruned
 
         ${params.tools.plink} \
             --bfile ${baseqc_basename} \

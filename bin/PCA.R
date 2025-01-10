@@ -1,6 +1,6 @@
 # Script to plot a PCA based on a .eigenvec file produced with plink (option --pca).
 
-# This script plots the PCA in pdf and png files.
+# This script plots the PCA in a pdf file.
 if(!require(optparse, quietly = T)) install.packages(optparse) 
 if(!require(ggplot2, quietly = T)) install.packages(ggplot2) 
 
