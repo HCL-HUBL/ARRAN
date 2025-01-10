@@ -15,6 +15,8 @@ include { CreateSparseGRM }     from './modules/Association.nf'
 include { SaigeFitNullModel }   from './modules/Association.nf'
 include { SaigeSingleAssoc }    from './modules/Association.nf'
 
+include { ManhattanPlot }       from './modules/Downstream.nf'
+
 // Initialising the options with default values:
 params.plink_fileset = ""                 // The path to the plink fileset (/path/to/example.{bim,bed,fam})
 params.covar_file    = ""
@@ -75,7 +77,7 @@ workflow QC {
         Pruning(plink_baseQC_ch)
         HetCoeff(plink_baseQC_ch, Pruning.out.prune_in)
         HetFilter(HetCoeff.out.het)
-        CreateOutputGWAS(plink_baseQC_ch, HetFilter.out.valides)
+        CreateOutputGWAS(plink_baseQC_ch, Pruning.out.prune_in, HetFilter.out.valides)
         PlotPCA(CreateOutputGWAS.out.plink_QCed, CreateOutputGWAS.out.eigenvec)
         CreateSparseGRM(CreateOutputGWAS.out.plink_QCed_pruned)
 
@@ -92,9 +94,10 @@ workflow SAIGE_GWAS {
         CreatePhenoFile(plink_QCed, covar_file)
         SaigeFitNullModel(plink_QCed, CreatePhenoFile.out.phenoFile)
         SaigeSingleAssoc(plink_QCed, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr)
+        ManhattanPlot(SaigeSingleAssoc.out.saige_sv)
 
     emit:
-        SaigeSingleAssoc.out.saige_sv_output
+        SaigeSingleAssoc.out.saige_sv
 }
 
 workflow {

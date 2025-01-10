@@ -97,10 +97,10 @@ process SaigeSingleAssoc {
         path(vr_file)
     
     output:
-        path(saige_sv_output), emit: saige_sv_output
+        path(saige_sv), emit: saige_sv
 
     script:
-        saige_sv_output = "${plink_basename}_saige.single_variant.tsv"
+        saige_sv = "${plink_basename}_saige.single_variant.tsv"
 
         """
         set -eo pipefail
@@ -114,6 +114,6 @@ process SaigeSingleAssoc {
             --is_Firth_beta=TRUE --pCutoffforFirth=0.05 \
             --LOCO=FALSE \
             --is_output_markerList_in_groupTest=TRUE \
-            --SAIGEOutputFile=${saige_sv_output}
+            --SAIGEOutputFile=${saige_sv}
         """
 }

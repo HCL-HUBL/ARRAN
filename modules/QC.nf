@@ -102,6 +102,7 @@ process CreateOutputGWAS {
 
     input:
         tuple val(baseqc_basename), path(baseqc_files)
+        path(prune_in)
         path(valides)
 
     output:
