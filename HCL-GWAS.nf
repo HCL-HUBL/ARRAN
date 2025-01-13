@@ -10,18 +10,19 @@ include { HetCoeff }            from './modules/QC.nf'
 include { HetFilter }           from './modules/QC.nf'
 include { CreateOutputGWAS }    from './modules/QC.nf'
 
-include { CreatePhenoFile }     from './modules/Association.nf'
-include { CreateSparseGRM }     from './modules/Association.nf'
-include { SaigeFitNullModel }   from './modules/Association.nf'
-include { SaigeSingleAssoc }    from './modules/Association.nf'
-
-include { ManhattanPlot }       from './modules/Downstream.nf'
+include { CreatePhenoFile }                                 from './modules/Association.nf'
+include { CreateSparseGRM }                                 from './modules/Association.nf'
+include { SaigeFitNullModel as SaigeFitNullModel_GWAS }     from './modules/Association.nf'
+include { SaigeFitNullModel as SaigeFitNullModel_RVAT }     from './modules/Association.nf'
+include { SaigeSingleAssoc }                                from './modules/Association.nf'
+include { ManhattanPlot }                                   from './modules/Association.nf'
 
 // Initialising the options with default values:
 params.plink_fileset = ""                 // The path to the plink fileset (/path/to/example.{bim,bed,fam})
 params.covar_file    = ""
 params.outdir        = "${launchDir}"     // The output directory where the outputs will be stored
-params.genome_build  = "hg19"             // The genome build (not used for now)
+params.genome_build  = "hg19"             // Accepts 'hg19' or 'hg38', used to define PAR regions
+params.trait_type    = "binary"           // Trait type, must be 'binary' or 'quantitative'
 
 params.qc_mind       = 0.05               // Individuals with >5% missing genotypes will be removed
 params.qc_geno       = 0.05               // Variants with >5% missing genotypes will be removed
@@ -32,7 +33,6 @@ params.pr_window     = 200                // Window size for the pruning, in num
 params.pr_step       = 50                 // Window sliding size in number of variants
 params.pr_r2         = 0.25               // Pairs of variants with r2 > pr_r2 will be removed
 
-params.saige_trait   = "binary"           // Trait type, must be 'binary' or 'quantitative'
 params.gwas_maf      = 0.01               // Variants with a MAF < 'gwas_maf' will be removed for the GWAS analysis
 params.rvat_maf      = 0.01               // Variants with a MAF > 'rvat_maf' will be removed for the rare variants analysis
 
@@ -54,8 +54,8 @@ if(params.pr_r2 < 0 || params.pr_r2 > 1)    error("\nERROR in config: 'pr_r2' mu
 if(params.rvat_maf < 0)                     error("\nERROR in config: 'rvat_maf' must be >= 0")
 if(params.gwas_maf < 0)                     error("\nERROR in config: 'gwas_maf' must be >= 0")
 
-if(params.saige_trait != "binary" &&
-   params.saige_trait != "quantitative")    error("\nERROR in config: 'saige_trait' must be 'binary' or 'quantitative'")
+if(params.trait_type != "binary" &&
+   params.trait_type != "quantitative")     error("\nERROR in config: 'trait_type' must be 'binary' or 'quantitative'")
 
 
 // Initialising Channels based on params:
@@ -88,19 +88,30 @@ workflow QC {
 workflow SAIGE_GWAS {
     take:
         plink_QCed
-        covar_file
+        pheno_file
     
     main:
-        CreatePhenoFile(plink_QCed, covar_file)
-        SaigeFitNullModel(plink_QCed, CreatePhenoFile.out.phenoFile)
-        SaigeSingleAssoc(plink_QCed, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr)
+        SaigeFitNullModel_GWAS(plink_QCed, pheno_file, "GWAS")
+        SaigeSingleAssoc(plink_QCed, SaigeFitNullModel_GWAS.out.gmmat, SaigeFitNullModel_GWAS.out.vr)
         ManhattanPlot(SaigeSingleAssoc.out.saige_sv)
 
     emit:
         SaigeSingleAssoc.out.saige_sv
 }
 
+// workflow SAIGE_RVAT {
+//     take:
+//         plink_rvat
+//         pheno_file
+    
+//     main:
+//         SaigeFitNullModel_RVAT(plink_QCed, pheno_file, "RVAT")
+// }
+
 workflow {
     plink_QCed_ch = QC(plink_ch, remove_ch)
-    SAIGE_GWAS(plink_QCed_ch, covar_file_ch)
+
+    pheno_file_ch = CreatePhenoFile(plink_QCed_ch, covar_file_ch)
+
+    SAIGE_GWAS(plink_QCed_ch, pheno_file_ch)
 }

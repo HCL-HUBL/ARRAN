@@ -10,25 +10,31 @@ option_list <- list(
                 type = "character", 
                 default = "", 
                 help = "Full path to plink .eigenvec file.",
-                metavar = "character"),
+                metavar = "<PATH_TO_EIGENVEC>"),
 
     make_option(c("-f", "--fam"),
                 type = "character",
                 default = "",
                 help = "Optional: the path to plink .fam file to color the PCA.",
-                metavar = "character"),
+                metavar = "<PATH_TO_FAM>"),
+    
+    make_option(c("-b", "--binary"),
+                type = "logical",
+                default = TRUE,
+                help = "Is the phenotype binary ?",
+                metavar = "<TRUE,FALSE>"),
     
     make_option(c("-o", "--output"),
                 type = "character",
                 default = "PCA",
                 help = "Output basename, the PCA will be plotted to <output>.pdf and <output>.png",
-                metavar = "character"),
+                metavar = "<OUTPUT_BASE>"),
 
     make_option(c("-v", "--verbose"),
                 type = "logical",
                 default = FALSE,
                 help = "Print information during execution (FALSE by default)",
-                metavar = "BOOLEAN")
+                metavar = "<TRUE,FALSE>")
 );
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -47,6 +53,7 @@ if(file.exists(opt$f)) {
     colnames(fam) <- c("FID", "IID", "FATHER", "MOTHER", "SEX", "PHENO")
     # Reordering the fam file according to the eigenvec, to extract the phenotypes:
     eigenvec$phenotype <- fam$PHENO[match(x = eigenvec$IID, table = fam$IID)]
+    if(opt$b) eigenvec$phenotype <- as.factor(eigenvec$phenotype)
     eigenvec$sex <- as.factor(fam$SEX[match(x = eigenvec$IID, table = fam$IID)])
 } else { 
     eigenvec$phenotype <- "no_phenotype_info"

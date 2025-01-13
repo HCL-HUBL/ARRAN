@@ -14,7 +14,7 @@ process CreatePhenoFile {
         phenoFile = "saige_phenofile.tsv"
 
         binary_flag = "-b FALSE"
-        if(params.saige_trait == "binary") binary_flag = "-b TRUE"
+        if(params.trait_type == "binary") binary_flag = "-b TRUE"
 
         """
         set -eo pipefail
@@ -58,6 +58,7 @@ process SaigeFitNullModel {
     input:
         tuple val(plink_basename), path(plink_files)
         path(phenofile)
+        val(step)  // should be "GWAS" or "RVAT" will determine if 'isCateVarianceRatio' is TRUE or FALSE
 
     output:
         path(gmmat_file), emit: gmmat
@@ -68,7 +69,11 @@ process SaigeFitNullModel {
         vr_file    = "${plink_basename}_saige.varianceRatio.txt"
 
         invnorm = "--invNormalize=FALSE"
-        if(params.saige_trait == "quantitative") invnorm = "--invNormalize=TRUE"
+        if(params.trait_type == "quantitative") invnorm = "--invNormalize=TRUE"
+
+        cateVR_cmd = ""
+        if(step == "GWAS") cateVR_cmd = "--isCateVarianceRatio=FALSE"
+        if(step == "RVAT") cateVR_cmd = "--isCateVarianceRatio=TRUE"
 
         """
         set -eo pipefail
@@ -81,7 +86,8 @@ process SaigeFitNullModel {
             --qCovarColList=${params.saige_qcovar} \
             --sampleIDColinphenoFile=IID \
             ${invnorm} \
-            --traitType=${params.saige_trait} \
+            ${cateVR_cmd} \
+            --traitType=${params.trait_type} \
             --outputPrefix=${plink_basename}_saige \
             --nThreads=${task.cpus} \
             --IsOverwriteVarianceRatioFile=TRUE
@@ -102,8 +108,14 @@ process SaigeSingleAssoc {
     script:
         saige_sv = "${plink_basename}_saige.single_variant.tsv"
 
+        xpar_cmd = "--is_rewrite_XnonPAR_forMales=FALSE"
+        if(params.genome_build == "hg19") xpar_cmd = "--X_PARregion='60001-2699520,154931044-155260560' --is_rewrite_XnonPAR_forMales=TRUE --sampleFile_male=males.list"
+        if(params.genome_build == "hg38") xpar_cmd = "--X_PARregion='10001-2781479,155701383-156030895' --is_rewrite_XnonPAR_forMales=TRUE --sampleFile_male=males.list"
+
         """
         set -eo pipefail
+
+        awk '\$5 == 1 { print \$2 }' ${plink_basename}.fam > males.list
 
         ${params.tools.Rscript} ${params.tools.saige_folder}/step2_SPAtests.R \
             --bedFile=${plink_basename}.bed \
@@ -112,8 +124,28 @@ process SaigeSingleAssoc {
             --GMMATmodelFile=${gmmat_file} \
             --varianceRatioFile=${vr_file} \
             --is_Firth_beta=TRUE --pCutoffforFirth=0.05 \
+            ${xpar_cmd} \
             --LOCO=FALSE \
             --is_output_markerList_in_groupTest=TRUE \
             --SAIGEOutputFile=${saige_sv}
+        """
+}
+
+process ManhattanPlot {
+    publishDir "${params.outdir}/plots/", mode: 'copy'
+
+    input:
+        path(saige_sv)
+
+    output:
+        path(manhattan)
+    
+    script:
+        manhattan = "Manhattan_${saige_sv.baseName}.pdf"
+        
+        """
+        set -eo pipefail
+
+        ${params.tools.Rscript} ${projectDir}/bin/manhattan_plot.R -i ${saige_sv} -o ${manhattan}
         """
 }

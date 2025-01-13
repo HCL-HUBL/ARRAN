@@ -149,12 +149,16 @@ process PlotPCA {
         path("${qced_basename}_PCA.pdf")
 
     script:
+        binary_cmd = "-b FALSE"
+        if(params.trait_type == "binary") binary_cmd = "-b TRUE"
+
         """
         set -eo pipefail
 
         ${params.tools.Rscript} ${projectDir}/bin/PCA.R \
             -i ${eigenvec} \
             -f ${qced_basename}.fam \
+            ${binary_cmd} \
             -o ${qced_basename}_PCA
         """
 }

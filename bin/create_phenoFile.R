@@ -15,24 +15,25 @@ option_list <- list(
                 type = "character", 
                 default = "", 
                 help = "Full path to plink .fam file.",
-                metavar = "character"),
+                metavar = "<PATH_TO_FAM>"),
     
     make_option(c("-c", "--covar"),
                 type = "character",
                 default = "",
                 help = "Full path to plink .covariates file.",
-                metavar = "character"),
+                metavar = "<PATH_to_COVAR>"),
     
     make_option(c("-b", "--binary"),
                 type = "logical",
                 default = FALSE,
-                help = "Use this flag for binary phenotypes"),
+                help = "Use this flag for binary phenotypes",
+                metavar = "<TRUE,FALSE>"),
 
     make_option(c("-v", "--verbose"),
                 type = "logical",
                 default = FALSE,
                 help = "Print information during execution (FALSE by default)",
-                metavar = "BOOLEAN")
+                metavar = "<TRUE,FALSE>")
 );
 
 opt <- parse_args(OptionParser(option_list = option_list))

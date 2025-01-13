@@ -12,19 +12,19 @@ option_list <- list(
                 type = "character", 
                 default = "", 
                 help = "Full path to SAIGE .single_variant.tsv file.",
-                metavar = "character"),
+                metavar = "<PATH_TO_SAIGE>"),
 
     make_option(c("-o", "--output"),
                 type = "character",
                 default = "Manhattan",
                 help = "Name of the output pdf file.",
-                metavar = "character"),
+                metavar = "<OUTPUT_NAME>"),
 
     make_option(c("-v", "--verbose"),
                 type = "logical",
                 default = FALSE,
                 help = "Print information during execution (FALSE by default)",
-                metavar = "BOOLEAN")
+                metavar = "<TRUE,FALSE>")
 );
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -41,6 +41,7 @@ pdf(opt$o, width = 12)
                      bp = "POS", 
                      snp = "MarkerID", 
                      p = "p.value", 
-                     col = c("#4393c3", "#009988"), 
-                     main = "Manhattan Plot")
+                     col = c("#4393c3", "#B2182B"),
+                     main = "Manhattan Plot",
+                     cex = 0.75)
 dev.off()

@@ -17,20 +17,20 @@ option_list <- list(
                 type = "character", 
                 default = "", 
                 help = "Full path to plink .het file.",
-                metavar = "character"),
+                metavar = "<PATH_TO_HET>"),
     
     # Filtering on F coeff (! low heterozygosity = high F coeff and inversely)
     make_option(c("-f", "--filter"),
                 type = "character",
                 default = "both",
                 help = "Heterozygosity filter to apply, 'low', 'high' or 'both'",
-                metavar = "character"),
+                metavar = "<low,high,both>"),
 
     make_option(c("-v", "--verbose"),
                 type = "logical",
                 default = FALSE,
                 help = "Print information during execution (FALSE by default)",
-                metavar = "BOOLEAN")
+                metavar = "<TRUE,FALSE>")
 );
 
 opt <- parse_args(OptionParser(option_list = option_list))
