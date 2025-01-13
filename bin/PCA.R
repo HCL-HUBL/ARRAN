@@ -46,7 +46,7 @@ if(file.exists(opt$f)) {
     fam <- read.table(file = opt$f, header = F, sep = " ", stringsAsFactors = F)
     colnames(fam) <- c("FID", "IID", "FATHER", "MOTHER", "SEX", "PHENO")
     # Reordering the fam file according to the eigenvec, to extract the phenotypes:
-    eigenvec$phenotype <- as.factor(fam$PHENO[match(x = eigenvec$IID, table = fam$IID)])
+    eigenvec$phenotype <- fam$PHENO[match(x = eigenvec$IID, table = fam$IID)]
     eigenvec$sex <- as.factor(fam$SEX[match(x = eigenvec$IID, table = fam$IID)])
 } else { 
     eigenvec$phenotype <- "no_phenotype_info"

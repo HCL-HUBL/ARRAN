@@ -41,6 +41,6 @@ pdf(opt$o, width = 12)
                      bp = "POS", 
                      snp = "MarkerID", 
                      p = "p.value", 
-                     col = c("#6495ED", "#DE3163"), 
+                     col = c("#4393c3", "#009988"), 
                      main = "Manhattan Plot")
 dev.off()

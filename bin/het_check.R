@@ -71,7 +71,7 @@ if(opt$f == "high") {
 pdf(paste0(opt$i, '.pdf'))
     ggplot(het, aes(x = F, fill = filter)) +
         geom_histogram(col = "black", bins = 50) + 
-        scale_fill_manual(values = c("#009988", "#B2182B", "#4393C3")) + 
+        scale_fill_manual(values = c("#4393C3", "#B2182B", "#009988")) + 
         theme_bw() + ggtitle("GWAS QC - Heterozygosity")
 dev.off()
 

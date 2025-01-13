@@ -98,7 +98,7 @@ This pipeline will output the following files:
 
 This plots shows the distribution of the F coefficient in the cohort. The F coefficient reports the observed and expected autosomal homozygous genotype counts for each sample. A low F value corresponds to a high heterozygosity and a high F value corresponds to a low heterozygosity.
 
-Usually samples outside 3 standard deviations for the cohort's mean are removed from the analysis, to avoid biases due to consanguinity (low het.) and library preparation (high het.). There are plotted in red and green respectively in the plot. In HCL-GWAS.nf you can choose to remove samples with 'low' heterozygosity, 'high' heterozygosity or 'both' (cf 'qc_hetfilter' in the config file).
+Usually samples outside 3 standard deviations for the cohort's mean are removed from the analysis, to avoid biases due to consanguinity (low het.) and library preparation (high het.). There are plotted in red and blue respectively in the plot. In HCL-GWAS.nf you can choose to remove samples with 'low' heterozygosity, 'high' heterozygosity or 'both' (cf 'qc_hetfilter' in the config file).
 
 *Note*: if you have admixed samples in your cohort, they will have a very low F coefficient and you should consider wether or not to remove them from the analysis, as the high heterozygosity is then expected and is not reflective of issues during library preparation.
 
