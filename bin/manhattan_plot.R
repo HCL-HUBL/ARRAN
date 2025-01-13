@@ -14,10 +14,17 @@ option_list <- list(
                 help = "Full path to SAIGE .single_variant.tsv file.",
                 metavar = "character"),
 
+    make_option(c("-o", "--output"),
+                type = "character",
+                default = "Manhattan",
+                help = "Name of the output pdf file.",
+                metavar = "character"),
+
     make_option(c("-v", "--verbose"),
                 type = "logical",
                 default = FALSE,
-                help = "Print information during execution (off by default)")
+                help = "Print information during execution (FALSE by default)",
+                metavar = "BOOLEAN")
 );
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -28,14 +35,12 @@ if(file.exists(opt$i)) {
     saige_sv <- read.table(opt$i, header = T, sep = "\t")
 } else { stop(paste0("File '", opt$i, "' does not exist.")) }
 
-man <- qqman::manhattan(x = saige_sv, 
-                        chr = "CHR", 
-                        bp = "POS", 
-                        snp = "MarkerID", 
-                        p = "p.value", 
-                        col = c("#6495ED", "#DE3163"), 
-                        main = "Manhattan")
-
-pdf("Manhattan.pdf")
-    print(man)
+pdf(opt$o, width = 12)
+    qqman::manhattan(x = saige_sv,
+                     chr = "CHR", 
+                     bp = "POS", 
+                     snp = "MarkerID", 
+                     p = "p.value", 
+                     col = c("#6495ED", "#DE3163"), 
+                     main = "Manhattan Plot")
 dev.off()

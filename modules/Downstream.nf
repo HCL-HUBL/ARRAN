@@ -12,11 +12,11 @@ process ManhattanPlot {
         path(manhattan)
     
     script:
-        manhattan = "Manhattan.pdf"
+        manhattan = "Manhattan_${saige_sv.baseName}.pdf"
         
         """
         set -eo pipefail
 
-        ${params.tools.Rscript} ${projectDir}/bin/manhattan_plot.R -i ${saige_sv}
+        ${params.tools.Rscript} ${projectDir}/bin/manhattan_plot.R -i ${saige_sv} -o ${manhattan}
         """
 }

@@ -27,7 +27,8 @@ option_list <- list(
     make_option(c("-v", "--verbose"),
                 type = "logical",
                 default = FALSE,
-                help = "Print information during execution (off by default)")
+                help = "Print information during execution (FALSE by default)",
+                metavar = "BOOLEAN")
 );
 
 opt <- parse_args(OptionParser(option_list = option_list))

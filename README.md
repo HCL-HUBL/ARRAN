@@ -4,7 +4,13 @@
 
 Nextflow pipeline to perform Genome Wide Association Studies (GWAS) and/or Rare Variants Association Tests (RVAT). This Readme contains step-by-step instructions to configure and run the pipeline.
 
-The pipeline works for binary and continuous traits and uses SAIGE to perform the association tests.
+This pipeline uses Pink to perform QC and SAIGE to perform the association tests. It includes:
+ 
+ - Association for Binary and Continuous traits
+
+ - Inclusion of variants on chrX
+
+ - Generation of logs and plots for the different steps of the pipeline (PCA, Manhattan etc...)
 
 ## Table of Contents
 
@@ -23,10 +29,10 @@ The following tools need to be installed on your machine:
 
  - [plink v1.9](https://www.cog-genomics.org/plink/1.9/)
 
- - R 
-    - The R packages 'optparse' and 'ggplot2'
+ - [R](https://cran.r-project.org/) 
+    - The R packages 'optparse', 'qqman' and 'ggplot2'
 
- - SAIGE 
+ - [SAIGE](https://saigegit.github.io/SAIGE-doc/)
 
 All dependencies are available inside a Singularity image, that can be build from the recipe provided within this repository [HCL-GWAS.def](./HCL-GWAS.def):
 
@@ -40,7 +46,7 @@ singularity build HCL-GWAS.sif HCL-GWAS.def
 
 The pipeline can be launched from [HCL-GWAS.nf](./HCL-GWAS.nf).
 
-You will need to change values in the configuration file [default.conf](./confs/default.conf) to adjust the QC and association steps to your own needs.
+You will need to change values in the configuration file [default.conf](./confs/default.conf) to adjust the QC and association steps to fit your own study.
 
 ### Input data
 
@@ -70,14 +76,14 @@ The first step filters performs standard GWAS quality control:
     - 'low':  remove individuals with a F coefficient > 3 SDs from the cohort's mean.
     - 'high': remove individuals with a F coefficient < 3 SDs from the cohort's mean.
     - 'both': applies both of the above.
-    - *note*: the F coefficient is inversely correlated with heterozygosity (so a 'high' heterozygosity corresponds to a low F value).
+    - *note: the F coefficient is inversely correlated with heterozygosity (so a 'high' heterozygosity corresponds to a low F value).*
 
  - Remove variants with 5% missing genotypes (can be changed with 'qc_geno')
 
  - Produce the eigenvectors and eigenvalues of the genomic PCA
 
  - Remove variants based on their Minor Allele Frequency:
-    - For the GWAS: variants with a MAF < 'qc_maf'
+    - For the GWAS: variants with a MAF < 'gwas_maf'
     - For the RVAT: variants with a MAF > 'rvat_maf'
 
 This pipeline will output the following files:
@@ -85,6 +91,16 @@ This pipeline will output the following files:
  - <basename>_QCed.{bim,bed,fam}: contains the variants and individuals that passed the QC step
 
  - ./plots/
+
+#### Interpretation:
+
+![het_plot](./images/heterozygosity_plot.png "Heterozygosity plot representing the distribution of the F coeff in a cohort.")
+
+This plots shows the distribution of the F coefficient in the cohort. The F coefficient reports the observed and expected autosomal homozygous genotype counts for each sample. A low F value corresponds to a high heterozygosity and a high F value corresponds to a low heterozygosity.
+
+Usually samples outside 3 standard deviations for the cohort's mean are removed from the analysis, to avoid biases due to consanguinity (low het.) and library preparation (high het.). There are plotted in red and green respectively in the plot. In HCL-GWAS.nf you can choose to remove samples with 'low' heterozygosity, 'high' heterozygosity or 'both' (cf 'qc_hetfilter' in the config file).
+
+*Note*: if you have admixed samples in your cohort, they will have a very low F coefficient and you should consider wether or not to remove them from the analysis, as the high heterozygosity is then expected and is not reflective of issues during library preparation.
 
 ### GWAS association 
 
