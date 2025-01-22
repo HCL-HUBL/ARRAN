@@ -27,7 +27,7 @@ params.trait_type    = "binary"           // Trait type, must be 'binary' or 'qu
 params.qc_mind       = 0.05               // Individuals with >5% missing genotypes will be removed
 params.qc_geno       = 0.05               // Variants with >5% missing genotypes will be removed
 params.qc_remove     = ""                 // (optional) File listing IIDs and FIDs of individuals to be excluded
-params.qc_hetfilter  = "both"             // Heterozygosity filter, must be "low", "high" or "both", cf: ./bin/het_check.R
+params.qc_hetfilter  = "both"             // Heterozygosity filter, must be "none", "low", "high" or "both", cf: ./bin/het_check.R
 
 params.pr_window     = 200                // Window size for the pruning, in number of variants
 params.pr_step       = 50                 // Window sliding size in number of variants
@@ -43,9 +43,10 @@ if(params.covar_file == "")                 error("\nERROR in config: 'covar_fil
 
 if(params.qc_mind < 0)                      error("\nERROR in config: 'qc_mind' must be >= 0")
 if(params.qc_geno < 0)                      error("\nERROR in config: 'qc_geno' must be >= 0")
-if(params.qc_hetfilter != "low" && 
+if(params.qc_hetfilter != "none" &&
+   params.qc_hetfilter != "low" && 
    params.qc_hetfilter != "high" &&  
-   params.qc_hetfilter != "both")           error("\nERROR in config: 'qc_hetfilter' must be 'low', 'high' or 'both'")
+   params.qc_hetfilter != "both")           error("\nERROR in config: 'qc_hetfilter' must be 'none', 'low', 'high' or 'both'")
 
 if(params.pr_window < 1)                    error("\nERROR in config: 'pr_window' must be > 0")
 if(params.pr_step < 1)                      error("\nERROR in config: 'pr_step' must be > 0")

@@ -19,12 +19,12 @@ option_list <- list(
                 help = "Full path to plink .het file.",
                 metavar = "<PATH_TO_HET>"),
     
-    # Filtering on F coeff (! low heterozygosity = high F coeff and inversely)
+    # Filtering on F coeff (! low het. = high F coeff and inversely)
     make_option(c("-f", "--filter"),
                 type = "character",
                 default = "both",
-                help = "Heterozygosity filter to apply, 'low', 'high' or 'both'",
-                metavar = "<low,high,both>"),
+                help = "Heterozygosity filter to apply, 'none', 'low', 'high' or 'both'",
+                metavar = "<none,low,high,both>"),
 
     make_option(c("-v", "--verbose"),
                 type = "logical",
@@ -54,7 +54,10 @@ het$filter[het$F > mean(het$F) + 3*sd(het$F)] <- "low_het"
 het$filter[het$F < mean(het$F) - 3*sd(het$F)] <- "high_het"
 
 # Get the valid and nonvalid samples (3 SDs from the group mean)
-if(opt$f == "high") {
+if(opt$f == "none") {
+    valides     <- het
+    non.valides <- colnames(het)
+} else if(opt$f == "high") {
     valides     <- subset(het, filter == "valid" | filter == "low_het")
     non.valides <- subset(het, filter == "high_het")
 } else if(opt$f == "low") {
@@ -64,10 +67,9 @@ if(opt$f == "high") {
     valides     <- subset(het, filter == "valid")
     non.valides <- subset(het, filter == "low_het" | filter == "high_het")
 } else {
-    stop(paste0("Option -f / --filter should either 'low', 'high' of 'both', current value '", opt$f, "'"))
+    stop(paste0("Option -f / --filter should either be 'none', 'low', 'high' of 'both', current value '", opt$f, "'"))
 }
 
-# Plot
 pdf(paste0(opt$i, '.pdf'))
     ggplot(het, aes(x = F, fill = filter)) +
         geom_histogram(col = "black", bins = 50) + 

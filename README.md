@@ -6,7 +6,7 @@ Nextflow pipeline to perform Genome Wide Association Studies (GWAS) and/or Rare 
 
 This pipeline uses Pink to perform QC and SAIGE to perform the association tests. It includes:
  
- - Association for Binary and Continuous traits
+ - GWAS and Rare Variants Association Tests for Binary and Continuous traits
 
  - Inclusion of variants on chrX
 
@@ -17,11 +17,12 @@ This pipeline uses Pink to perform QC and SAIGE to perform the association tests
 1. [Introduction](#introduction)
 2. [Table of Contents](#table-of-contents)
 3. [Dependencies](#dependencies)
-3. [The Pipeline](#the-pipeline)
-    - [Input data](#input-data)
+4. [The Pipeline](#the-pipeline)
+    - [Input data and config](#input-data-and-config)
+5. [Step-by-step tutorial](#step-by-step-tutorial)    
     - [Quality Control](#quality-control)
     - [GWAS association](#gwas-association)
-    - [Downstream analysis](#downstream-analysis)
+    - [Rare Variants Association Tests ](#rare-variants-association-tests)
 
 ## Dependencies
 
@@ -34,10 +35,14 @@ The following tools need to be installed on your machine:
 
  - [SAIGE](https://saigegit.github.io/SAIGE-doc/)
 
-All dependencies are available inside a Singularity image, that can be build from the recipe provided within this repository [HCL-GWAS.def](./HCL-GWAS.def):
+All dependencies are available inside a Apptainer (or Singularity) image, that can be build from the recipe provided within this repository [HCL-GWAS.def](./HCL-GWAS.def):
 
 ```shell
+# Using singularity:
 singularity build HCL-GWAS.sif HCL-GWAS.def
+
+# Using apptainer:
+apptainer build HCL-GWAS.sif HCL-GWAS.def
 ```
 
 *Note: The scripts were developed and tested on Linux (Debian release 11) using nextflow v22.04.5 and R v4.4.1*
@@ -48,7 +53,9 @@ The pipeline can be launched from [HCL-GWAS.nf](./HCL-GWAS.nf).
 
 You will need to change values in the configuration file [default.conf](./confs/default.conf) to adjust the QC and association steps to fit your own study.
 
-### Input data
+### Input data and config
+
+#### Genotypes:
 
 To run this pipeline you will need genotyping data in the *plink* format:
  
@@ -60,49 +67,98 @@ To run this pipeline you will need genotyping data in the *plink* format:
 
 More information about the formats can be found in the Plink documentation: https://www.cog-genomics.org/plink/1.9/formats.
 
-You will also need a [covariates file](https://www.cog-genomics.org/plink/1.9/input#covar) which **must** have a header.
+#### Covariates:
 
-### Quality Control
+You will also need a [covariates file](https://www.cog-genomics.org/plink/1.9/input#covar) which **must** have the *FID* and *IID* columns and a header line.
 
-#### QC on the genotype data:
+Example of a covariates file:
 
-The first step filters performs standard GWAS quality control:
+```
+FID    IID    AGE    SEXE    MUT1    TABAC   PC1     PC2     PC3     PC4     PC5
+C123   D001   34     1       2       0       -0.118  0.249   0.053   0.090   0.001
+C123   D002   67     2       1       0       -0.119  0.257   0.061   0.088   -0.004
+C321   D003   84     1       1       1       -0.120  0.249   0.056   0.094   -0.001
+...
+```
 
- - Remove individuals with >5% missing genotypes (can be changed with 'qc_mind')
+Do not forget to specify the *covar_file* (path to the covariates file), *saige_covar* (names of **all** covariates to take into account in the association model) and *saige_qcovar* (list of quantitative covariables) parameters in the config file. 
 
- - Remove individuals listed in the file designed by 'qc_remove' (keep *qc_remove = ""* if you do not wish to filter any individual)
+#### Exclusion
 
- - Remove individuals with extreme heterozygosity ('qc_hetfilter'):
+If some samples need to be removed from the entire analysis, you can create a file listing their *FIDs* and *IIDs*:
+
+```
+FID    IID
+C123   D001
+C123   D002
+```
+
+and assign the path to this file as the value to *qc_remove* in the config file.
+
+Keep *qc_remove = ""* if you do not wish to filter any individual.
+
+#### Heterozygosity filter
+
+Individuals with extreme heterozygosity levels are usually removed from GWAS analyses, to avoid biases due to consanguinity (low het. levels) and library preparation (high het. levels.). 
+
+In HCL-GWAS, samples outside 3 standard deviations for the cohort's mean can be removed from the analysis, depending on the value set for *qc_hetfilter*:
+    - 'none': do not apply the heterozygosity filter.
     - 'low':  remove individuals with a F coefficient > 3 SDs from the cohort's mean.
     - 'high': remove individuals with a F coefficient < 3 SDs from the cohort's mean.
     - 'both': applies both of the above.
     - *note: the F coefficient is inversely correlated with heterozygosity (so a 'high' heterozygosity corresponds to a low F value).*
 
- - Remove variants with 5% missing genotypes (can be changed with 'qc_geno')
+*Note*: if you have admixed samples in your cohort, they will have a very low F coefficient and you should consider wether or not to remove them from the analysis, as the high heterozygosity is then expected and is not reflective of a low quality library.
 
- - Produce the eigenvectors and eigenvalues of the genomic PCA
+## Step-by-step tutorial
+
+### Quality Control
+
+#### Base QC on the genotype data:
+
+The first step performs standard GWAS quality control:
+
+ - Remove individuals with >5% missing genotypes (the threhhold can be changed with *qc_mind*)
+
+ - Remove variants with >5% missing genotypes (the threhhold can be changed with *qc_geno*)
+
+ - Remove individuals listed in the file designed by [qc_remove](#exclusion)
+
+ - Remove individuals with [extreme heterozygosity](#heterozygosity)
+
+ - Produce the eigenvectors and eigenvalues of the [genomic PCA](#principal-component-analysis)
 
  - Remove variants based on their Minor Allele Frequency:
-    - For the GWAS: variants with a MAF < 'gwas_maf'
-    - For the RVAT: variants with a MAF > 'rvat_maf'
+    - For the GWAS: variants with a MAF < *gwas_maf*
+    - For the RVAT: variants with a MAF > *rvat_maf*
 
-This pipeline will output the following files:
+This pipeline will output the following:
 
- - <basename>_QCed.{bim,bed,fam}: contains the variants and individuals that passed the QC step
+ - logs/: folder containing various logs created during the QC steps.
 
- - ./plots/
+ - QC/:
+    - **\<basename\>_QCed.{bim,bed,fam}**: contains the QCed genotype data
+    - **\<basename\>_QCed_pruned.{bim,bed,fam}**: contains the *pruned* QCed genotype data
+    - **\<basename\>_baseQCed.eigenvec**: contains the PCA components
+    - **\<basename\>_baseQC.het.nonvalides**: contains the samples not passing the heterozygosity filtering
 
-#### Interpretation:
+ - ./plots/:
+    - **\<basename\>_baseQC.het.pdf**: plot of the F coefficient distribution (see [Heterozygosity plot](#heterozygosity-plot))
+    - **\<basename\>_baseQCed_PCA.pdf**: plot of the PCA (see: [Principal Component Analysis](#principal-component-analysis))
+
+#### Heterozygosity plot:
 
 ![het_plot](./images/heterozygosity_plot.png "Heterozygosity plot representing the distribution of the F coeff in a cohort.")
 
-This plots shows the distribution of the F coefficient in the cohort. The F coefficient reports the observed and expected autosomal homozygous genotype counts for each sample. A low F value corresponds to a high heterozygosity and a high F value corresponds to a low heterozygosity.
+This plots shows the distribution of the F coefficient in the cohort. The F coefficient reports the observed and expected autosomal homozygous genotype counts for each sample. A low F value corresponds to a high heterozygosity and a high F value corresponds to a low heterozygosity and there are plotted in red and blue respectively in the plot. In HCL-GWAS.nf you can choose to remove 'none' samples, or those with 'low' heterozygosity, 'high' heterozygosity or 'both' (see [heterozygosity filter](#heterozygosity-filter)).
 
-Usually samples outside 3 standard deviations for the cohort's mean are removed from the analysis, to avoid biases due to consanguinity (low het.) and library preparation (high het.). There are plotted in red and blue respectively in the plot. In HCL-GWAS.nf you can choose to remove samples with 'low' heterozygosity, 'high' heterozygosity or 'both' (cf 'qc_hetfilter' in the config file).
+#### Principal Component Analysis
 
-*Note*: if you have admixed samples in your cohort, they will have a very low F coefficient and you should consider wether or not to remove them from the analysis, as the high heterozygosity is then expected and is not reflective of issues during library preparation.
+HCL-GWAS plots the PCA obtained with the [*--pca* option](https://www.cog-genomics.org/plink/1.9/strat#pca) from plink. The PCA is built from the variance-standardized relationship matrix (GRM) and the components are written to a *.eigenvec* file.
+
+This plot can help you to find patterns in the genetic relationship between individuals in your cohort, notably regarding ancestry. The principal components are usually given as covariates to the GWAS to account for ancestry in the association models.
 
 ### GWAS association 
 
-### Downstream analysis
+### Rare Variants Association Tests 
 
