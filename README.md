@@ -69,7 +69,7 @@ More information about the formats can be found in the Plink documentation: http
 
 #### Covariates:
 
-You will also need a [covariates file](https://www.cog-genomics.org/plink/1.9/input#covar) which **must** have the *FID* and *IID* columns and a header line.
+You will also need a tab-delimited [covariates file](https://www.cog-genomics.org/plink/1.9/input#covar) which **must** have the *FID* and *IID* columns and a header line.
 
 Example of a covariates file:
 
@@ -85,7 +85,7 @@ Do not forget to specify the *covar_file* (path to the covariates file), *saige_
 
 #### Exclusion
 
-If some samples need to be removed from the entire analysis, you can create a file listing their *FIDs* and *IIDs*:
+If some samples need to be removed from the entire analysis, you can create a tab-delimited file listing their *FIDs* and *IIDs*:
 
 ```
 FID    IID
@@ -102,6 +102,7 @@ Keep *qc_remove = ""* if you do not wish to filter any individual.
 Individuals with extreme heterozygosity levels are usually removed from GWAS analyses, to avoid biases due to consanguinity (low het. levels) and library preparation (high het. levels.). 
 
 In HCL-GWAS, samples outside 3 standard deviations for the cohort's mean can be removed from the analysis, depending on the value set for *qc_hetfilter*:
+
     - 'none': do not apply the heterozygosity filter.
     - 'low':  remove individuals with a F coefficient > 3 SDs from the cohort's mean.
     - 'high': remove individuals with a F coefficient < 3 SDs from the cohort's mean.

@@ -138,6 +138,31 @@ process CreateOutputGWAS {
 }
 
 
+process CreateOutputRVAT {
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
+
+    input:
+        tuple val(baseqc_basename), path(baseqc_files)
+        path(valides)
+
+    output:
+        tuple val("${baseqc_basename}ed_rare"), path("${baseqc_basename}ed_rare.{bim,bed,fam}"), emit: plink_QCed
+        path("CreateOutputRVAT.log")
+
+    script:
+        """
+        set -eo pipefail
+
+        ${params.tools.plink} \
+            --bfile ${baseqc_basename} \
+            --keep ${valides} \
+            --max-maf ${params.rvat_maf} \
+            --allow-no-sex \
+            --make-bed \
+            --out ${baseqc_basename}ed_rare > CreateOutputRVAT.log
+        """
+}
+
 process PlotPCA {
     publishDir "${params.outdir}/plots/", mode: 'copy'
 

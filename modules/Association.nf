@@ -2,6 +2,8 @@
 
 nextflow.enable.dsl = 2
 
+// Creates the phenotype file for SAIGE which contains the samples IIDs and 
+// the phenotypes + covariates 
 process CreatePhenoFile {
     input:
         tuple val(plink_basename), path(plink_files)
@@ -26,6 +28,9 @@ process CreatePhenoFile {
         """
 }
 
+// Creates the SparseGRM matrix for information (is not used in subsequent steps)
+// useful to check the kinships within the cohort.
+// Needs at least 2000 variants with a MAF > 0.01
 process CreateSparseGRM {
     publishDir "${params.outdir}/saige/", mode: 'copy'
     
@@ -52,6 +57,8 @@ process CreateSparseGRM {
         """
 }
 
+// Fits the Null Model for the GWAS and/or RVAT. This model will be compared with 
+// the full model (containing the genotypes) for association testing.
 process SaigeFitNullModel {
     publishDir "${params.outdir}/saige/", mode: 'copy'
 
@@ -94,6 +101,7 @@ process SaigeFitNullModel {
         """
 }
 
+// Perform the Single Variant Association Test (= GWAS) using SAIGE+
 process SaigeSingleAssoc {
     publishDir "${params.outdir}/saige/", mode: 'copy'
 
@@ -131,6 +139,72 @@ process SaigeSingleAssoc {
         """
 }
 
+// Creates the Group File for the Rare Variant Association Test with SAIGE+
+// This contains the list of genes (or regions) to consider, with their associated variants.
+// We are using glist-hg19 or glist-hg38 to get the genes boundaries and assign variants.
+process CreateGroupFile {
+    publishDir "${params.outdir}/saige/", mode: 'copy'
+
+    input:
+        tuple val(plink_basename), path(plink_files)
+        path(glist)
+    
+    output:
+        path(groupFile), emit: group_file
+
+    script:
+        groupFile = "saige.groupFile"
+
+        """
+        set -eo pipefail
+
+        echo -e "CHR\\tID\\tBP" > variants.report
+        cut -f 1,2,4 ${plink_basename}.bim  >> variants.report
+        
+        ${params.tools.plink} --annotate variants.report ranges=${glist} 
+        sed 's/\\t/ /g' plink.annot  | cut -d " " -f 2,4  | sed 's/(.*//g' > plink.annot.clean
+
+        ${params.tools.Rscript} ${projectDir}/bin/create_groupFile.R -a plink.annot.clean
+        """
+}
+
+// Perform the Rare Variant Association Tests.
+// Only on variants with MAF < 'rvat_maf' (see conf, usually 0.01)
+// Using the group file created with the 'CreateGroupFile' process.
+process SaigeGeneAssoc {
+    publishDir "${params.outdir}/saige/", mode: 'copy'
+
+    input:
+        tuple val(plink_basename), path(plink_files)
+        path(gmmat_file)
+        path(vr_file)
+        path(groupFile)
+    
+    output:
+        path(saige_gene), emit: saige_gene
+
+    script:
+        saige_gene = "${plink_basename}_saige_gene_based.tsv"
+        
+        """
+        set -eo pipefail
+
+        ${params.tools.Rscript} ${params.tools.saige_folder}/step2_SPAtests.R \
+            --bedFile=${plink_basename}.bed \
+            --bimFile=${plink_basename}.bim \
+            --famFile=${plink_basename}.fam \
+            --GMMATmodelFile=${gmmat_file} \
+            --varianceRatioFile=${vr_file} \
+            --LOCO=FALSE \
+            --is_output_markerList_in_groupTest=TRUE \
+            --SAIGEOutputFile=${plink_basename}_saige_gene_based.tsv \
+            --groupFile=${groupFile} \
+            --annotation_in_groupTest="no_annot" \
+            --maxMAF_in_groupTest=0.001,0.01,0.1
+        """
+// --annotation_in_groupTest="lof,lof:missense,lof:missense:synonymous" \
+}
+
 process ManhattanPlot {
     publishDir "${params.outdir}/plots/", mode: 'copy'
 
@@ -147,5 +221,24 @@ process ManhattanPlot {
         set -eo pipefail
 
         ${params.tools.Rscript} ${projectDir}/bin/manhattan_plot.R -i ${saige_sv} -o ${manhattan}
+        """
+}
+
+process QQPlot {
+    publishDir "${params.outdir}/plots/", mode: 'copy'
+
+    input:
+        path(saige_sv)
+
+    output:
+        path(qqplot)
+
+    script:
+        qqplot = "QQplot_${saige_sv.baseName}.pdf"
+
+        """
+        set -eo pipefail
+
+        ${params.tools.Rscript} ${projectDir}/bin/QQplot.R -i ${saige_sv} -o ${qqplot}
         """
 }

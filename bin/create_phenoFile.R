@@ -52,7 +52,7 @@ if(file.exists(opt$c)) {
 } else { stop(paste0("File '", opt$c, "' does not exist.")) }
 
 # Adding covars to fam to create the phenoFile:
-phenoFile <- merge(x = fam, y = covar,
+phenoFile <- merge(x = fam[,c(1,2,6)], y = covar,
                    all.x = T, all.y = F,
                    by = "IID")
 #covar$PHENOTYPE <- fam$PHENOTYPE[match(x = covar$IID, table = fam$IID)]

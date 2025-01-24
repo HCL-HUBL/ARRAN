@@ -1,4 +1,4 @@
-# Script to create a manhattan plot from SAIGE single variants association output
+# Script to create a QQ plot from SAIGE single variants association output
 # Writes it to a pdf file
 
 if(!require(optparse, quietly = T)) install.packages(optparse) 
@@ -35,13 +35,6 @@ if(file.exists(opt$i)) {
     saige_sv <- read.table(opt$i, header = T, sep = "\t")
 } else { stop(paste0("File '", opt$i, "' does not exist.")) }
 
-pdf(opt$o, width = 14)
-    qqman::manhattan(x = saige_sv,
-                     chr = "CHR", 
-                     bp = "POS", 
-                     snp = "MarkerID", 
-                     p = "p.value", 
-                     col = c("#77AADD", "#EE8866"),
-                     main = "Manhattan Plot",
-                     cex = 0.6, cex.axis = 0.9)
+pdf(opt$o)
+    qqman::qq(saige_sv$p.value)
 dev.off()
