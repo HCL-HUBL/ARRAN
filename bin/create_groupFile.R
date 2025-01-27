@@ -30,16 +30,40 @@ if(file.exists(opt$a)) {
 #valid_annot <- annot[,2] != '.'
 annot <- annot[annot$ANNOT != '.', ]
 annot$anno <- 'no_annot'
-
 colnames(annot) <- c("var", "ID", "anno") # We use the colnames to have the "correct" name for the 2nd column of the groupFile
 
-annot_df <- as.data.frame(aggregate(ID ~ var + anno, annot, paste, collapse = ' '))
+# Group by the gene name "ID":
+annot <- aggregate(x = annot, by = list(annot$ID, annot$anno), FUN =  paste, simplify = T)
+# Then group the dataframe by genes to have the variants and annotations and two different lines:
+annot <- annot[,c("Group.1", "var", "anno")]
 
-#groupFile <- as.data.frame(aggregate(ID ~ ANNOT, annot, paste, collapse = ' '))
-# annot_df <- data.frame(group=c())
-# for(gene in unique(annot$ANNOT)) {
-#     annot_df <- rbind(annot_df, paste0(c(gene, 'var', annot$ID[annot$ANNOT == gene]), collapse = ' '))
-#     annot_df <- rbind(annot_df, paste0(c(gene, 'anno', annot$IMPACT[annot$ANNOT == gene]), collapse = ' '))
-# }
+# Transforming lists into characters:
+annot$var <- as.character(annot$var)
+annot$anno <- as.character(annot$anno)
 
-write.table(x = annot_df, file = 'saige.groupFile', quote = F, row.names = F, sep = ' ', col.names = F)
+# Removing unwanted characters (quotes and "c()"):
+annot$var <- paste(gsub(pattern = '"',    replacement = '', x = annot$var))
+annot$var <- paste(gsub(pattern = ',',    replacement = '', x = annot$var))
+annot$var <- paste(gsub(pattern = '\n',   replacement = '', x = annot$var))
+annot$var <- paste(gsub(pattern = 'c\\(', replacement = '', x = annot$var))
+annot$var <- paste(gsub(pattern = '\\)$', replacement = '', x = annot$var))
+
+annot$anno <- paste(gsub(pattern = '"',    replacement = '', x = annot$anno))
+annot$anno <- paste(gsub(pattern = ',',    replacement = '', x = annot$anno))
+annot$anno <- paste(gsub(pattern = '\n',   replacement = '', x = annot$anno))
+annot$anno <- paste(gsub(pattern = 'c\\(', replacement = '', x = annot$anno))
+annot$anno <- paste(gsub(pattern = '\\)$', replacement = '', x = annot$anno))
+
+# Transforming the annotations from wide to long format:
+long_annot <- reshape(data = annot, 
+                      direction = "long", 
+                      v.names = "value", 
+                      varying = c("var", "anno"), 
+                      timevar = "type", 
+                      times = names(annot)[2:3])
+long_annot <- long_annot[,c(1,2,3)]
+
+# Reordering by gene names:
+long_annot <- long_annot[order(long_annot$Group.1),]
+
+write.table(x = long_annot, file = 'saige.groupFile', quote = F, row.names = F, sep = ' ', col.names = F)

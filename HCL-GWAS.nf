@@ -97,6 +97,7 @@ workflow QC {
         plink_QCed_rvat = CreateOutputRVAT.out.plink_QCed
 }
 
+
 // Subworklow for the common variant Single Association analysis with SAIGE+
 workflow SAIGE_GWAS {
     take:
@@ -113,7 +114,8 @@ workflow SAIGE_GWAS {
         SaigeSingleAssoc.out.saige_sv
 }
 
-// Subworklow for the rare variant Gene Association analysis with SAIGE+
+
+// Subworklow for the Rare Variant Association Test with SAIGE+
 workflow SAIGE_RVAT {
     take:
         plink_QCed
@@ -124,23 +126,25 @@ workflow SAIGE_RVAT {
         SaigeFitNullModel(plink_QCed, pheno_file, "RVAT")
         CreateGroupFile(plink_QCed, glist)
         SaigeGeneAssoc(plink_QCed, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr, CreateGroupFile.out.group_file)
-        // ManhattanPlot(SaigeGeneAssoc.out.saige_gene)
-        // QQPlot(SaigeGeneAssoc.out.saige_gene)
+        ManhattanPlot(SaigeGeneAssoc.out.saige_gene)
+        QQPlot(SaigeGeneAssoc.out.saige_gene)
 
     emit:
         SaigeGeneAssoc.out.saige_gene
 }
 
-// Main workflow, calling all the other subworkflow
+
+// Main workflow, calling all the other subworkflow:
 workflow {
+    // Perform base Quality Control on the genotype data:
     QC(plink_ch, remove_ch)
 
+    // Extract the QCed genotypes, one for the GWAS (with common variants), one for the RVAT (with rare variants):
     plink_QCed_gwas = QC.out.plink_QCed_gwas
     plink_QCed_rvat = QC.out.plink_QCed_rvat
 
+    // Create the phenotype file and run SAIGE+ (GWAS and RVAT):
     pheno_file_ch = CreatePhenoFile(plink_QCed_gwas, covar_file_ch) // only needs the .fam file, so it should not matter if we use the gwas or rvat plinks
-
     SAIGE_GWAS(plink_QCed_gwas, pheno_file_ch)
-
     SAIGE_RVAT(plink_QCed_rvat, pheno_file_ch, glist_ch)
 }
