@@ -8,8 +8,10 @@ include { PlotPCA }                 from './modules/QC.nf'
 include { Pruning }                 from './modules/QC.nf'
 include { HetCoeff }                from './modules/QC.nf'
 include { HetFilter }               from './modules/QC.nf'
+include { HWEFlag }                 from './modules/QC.nf'
+include { CreateOutputBaseQC }      from './modules/QC.nf'
 include { CreateOutputGWAS }        from './modules/QC.nf'
-include { CreateOutputRVAT }        from './modules/QC.nf'
+// include { CreateOutputRVAT }        from './modules/QC.nf'
 
 include { CreatePhenoFile }         from './modules/Association.nf'
 include { CreateSparseGRM }         from './modules/Association.nf'
@@ -81,20 +83,21 @@ workflow QC {
 
     main:
         BaseQC(plink_ch, remove_ch)
-        plink_baseQC_ch = BaseQC.out.plink_baseQC
-
-        Pruning(plink_baseQC_ch)
-        HetCoeff(plink_baseQC_ch, Pruning.out.prune_in)
+        Pruning(BaseQC.out.plink_baseQC)
+        HetCoeff(BaseQC.out.plink_baseQC, Pruning.out.prune_in)
         HetFilter(HetCoeff.out.het)
-        CreateOutputGWAS(plink_baseQC_ch, Pruning.out.prune_in, HetFilter.out.valides)
-        CreateOutputRVAT(plink_baseQC_ch, HetFilter.out.valides)
+        CreateOutputBaseQC(BaseQC.out.plink_baseQC, Pruning.out.prune_in, HetFilter.out.valides) // Temporary output to compute the GRM and the PCA + will be use with MAF filters to generate the GWAS and RVAT sets
+        
+        HWEFlag(CreateOutputBaseQC.out.plink_QCed)
+        CreateSparseGRM(CreateOutputBaseQC.out.plink_QCed_pruned)
+        CreateOutputGWAS(CreateOutputBaseQC.out.plink_QCed)
+        // CreateOutputRVAT(CreateOutputBaseQC.out.plink_QCed)
 
-        PlotPCA(CreateOutputGWAS.out.plink_QCed, CreateOutputGWAS.out.eigenvec)
-        CreateSparseGRM(CreateOutputGWAS.out.plink_QCed_pruned)
+        PlotPCA(CreateOutputGWAS.out.plink_GWAS, CreateOutputGWAS.out.eigenvec) // PCA on GWAS output (need to remove very low maf variants to avoid errors)
 
     emit:
-        plink_QCed_gwas = CreateOutputGWAS.out.plink_QCed
-        plink_QCed_rvat = CreateOutputRVAT.out.plink_QCed
+        plink_QCed_gwas = CreateOutputGWAS.out.plink_GWAS
+        plink_QCed_rvat = CreateOutputBaseQC.out.plink_QCed
 }
 
 
@@ -126,8 +129,8 @@ workflow SAIGE_RVAT {
         SaigeFitNullModel(plink_QCed, pheno_file, "RVAT")
         CreateGroupFile(plink_QCed, glist)
         SaigeGeneAssoc(plink_QCed, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr, CreateGroupFile.out.group_file)
-        ManhattanPlot(SaigeGeneAssoc.out.saige_gene)
-        QQPlot(SaigeGeneAssoc.out.saige_gene)
+        // ManhattanPlot(SaigeGeneAssoc.out.saige_gene)
+        // QQPlot(SaigeGeneAssoc.out.saige_gene)
 
     emit:
         SaigeGeneAssoc.out.saige_gene

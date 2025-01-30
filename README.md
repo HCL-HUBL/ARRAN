@@ -10,7 +10,7 @@ This pipeline uses Pink to perform QC and SAIGE to perform the association tests
 
  - Inclusion of variants on chrX
 
- - Generation of logs and plots for the different steps of the pipeline (PCA, Manhattan etc...)
+ - Generation of logs and plots for the different steps of the pipeline (PCA, Manhattan, QQplot...)
 
 ## Table of Contents
 
@@ -119,19 +119,19 @@ In HCL-GWAS, samples outside 3 standard deviations for the cohort's mean can be 
 
 The first step performs standard GWAS quality control:
 
- - Remove individuals with >5% missing genotypes (the threhhold can be changed with *qc_mind*)
+ - Remove individuals with >5% missing genotypes (the threshold can be changed with *qc_mind*)
 
- - Remove variants with >5% missing genotypes (the threhhold can be changed with *qc_geno*)
+ - Remove variants with >5% missing genotypes (the threshold can be changed with *qc_geno*)
 
  - Remove individuals listed in the file designed by [qc_remove](#exclusion)
 
- - Remove individuals with [extreme heterozygosity](#heterozygosity)
+ - Remove individuals with [extreme heterozygosity](#heterozygosity-filter)
 
  - Produce the eigenvectors and eigenvalues of the [genomic PCA](#principal-component-analysis)
 
  - Remove variants based on their Minor Allele Frequency:
-    - For the GWAS: variants with a MAF < *gwas_maf*
-    - For the RVAT: variants with a MAF > *rvat_maf*
+    - For the GWAS: remove variants with a MAF < *gwas_maf*
+    - For the RVAT: remove variants with a MAF > *rvat_maf*
 
 This pipeline will output the following:
 
@@ -159,7 +159,13 @@ HCL-GWAS plots the PCA obtained with the [*--pca* option](https://www.cog-genomi
 
 This plot can help you to find patterns in the genetic relationship between individuals in your cohort, notably regarding ancestry. The principal components are usually given as covariates to the GWAS to account for ancestry in the association models.
 
+#### Preparation of the output files
+
+The missing rsids ".", will be replaced with automatic IDs using the following format: "chr_pos_ref_alt".
+
 ### GWAS association 
+
+
 
 ### Rare Variants Association Tests 
 

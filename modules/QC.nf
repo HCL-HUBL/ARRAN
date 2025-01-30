@@ -19,6 +19,9 @@ process BaseQC {
 
         """
         set -eo pipefail
+        
+        # Replacing missing variant IDs '.' with 'chr_pos_ref_alt':
+        awk '{if(\$2 == ".") {print  \$1"\\t"\$1"_"\$4"_"\$5"_"\$6"\\t"\$3"\\t"\$4"\\t"\$5"\\t"\$6} else {print \$0}}' ${plink_basename}.bim > tmp && mv tmp ${plink_basename}.bim
 
         ${params.tools.plink} \
             --bfile ${plink_basename} \
@@ -97,7 +100,8 @@ process HetFilter {
         """
 }
 
-process CreateOutputGWAS {
+
+process CreateOutputBaseQC {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
 
     input:
@@ -108,9 +112,7 @@ process CreateOutputGWAS {
     output:
         tuple val("${baseqc_basename}ed"), path("${baseqc_basename}ed.{bim,bed,fam}"), emit: plink_QCed
         tuple val("${baseqc_basename}ed_pruned"), path("${baseqc_basename}ed_pruned.{bim,bed,fam}"), emit: plink_QCed_pruned
-        path("${baseqc_basename}ed.eigenval"), emit: eigenval
-        path("${baseqc_basename}ed.eigenvec"), emit: eigenvec
-        path("CreateOutputGWAS.log")
+        path("CreateOutputBaseQC.log")
 
     script:
         """
@@ -121,7 +123,6 @@ process CreateOutputGWAS {
             --bfile ${baseqc_basename} \
             --keep ${valides} \
             --extract ${prune_in} \
-            --maf ${params.gwas_maf} \
             --allow-no-sex \
             --make-bed \
             --out ${baseqc_basename}ed_pruned
@@ -129,37 +130,94 @@ process CreateOutputGWAS {
         ${params.tools.plink} \
             --bfile ${baseqc_basename} \
             --keep ${valides} \
-            --maf ${params.gwas_maf} \
             --allow-no-sex \
-            --pca \
             --make-bed \
-            --out ${baseqc_basename}ed > CreateOutputGWAS.log
+            --out ${baseqc_basename}ed > CreateOutputBaseQC.log
         """
 }
 
 
-process CreateOutputRVAT {
+process CreateOutputGWAS {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
 
     input:
-        tuple val(baseqc_basename), path(baseqc_files)
-        path(valides)
+        tuple val(baseqced_basename), path(baseqced_files)
 
     output:
-        tuple val("${baseqc_basename}ed_rare"), path("${baseqc_basename}ed_rare.{bim,bed,fam}"), emit: plink_QCed
-        path("CreateOutputRVAT.log")
+        tuple val("${baseqced_basename}_GWAS"), path("${baseqced_basename}_GWAS.{bim,bed,fam}"), emit: plink_GWAS
+        path("${baseqced_basename}_GWAS.eigenval"), emit: eigenval
+        path("${baseqced_basename}_GWAS.eigenvec"), emit: eigenvec
+        path("CreateOutputGWAS.log")
 
     script:
         """
         set -eo pipefail
 
         ${params.tools.plink} \
-            --bfile ${baseqc_basename} \
-            --keep ${valides} \
-            --max-maf ${params.rvat_maf} \
+            --bfile ${baseqced_basename} \
+            --maf ${params.gwas_maf} \
             --allow-no-sex \
+            --pca \
             --make-bed \
-            --out ${baseqc_basename}ed_rare > CreateOutputRVAT.log
+            --out ${baseqced_basename}_GWAS > CreateOutputGWAS.log
+        """
+}
+
+// process CreateOutputRVAT {
+//     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
+
+//     input:
+//         tuple val(baseqced_basename), path(baseqced_files)
+
+//     output:
+//         tuple val("${baseqced_basename}_RVAT"), path("${baseqced_basename}_RVAT.{bim,bed,fam}"), emit: plink_RVAT
+//         path("CreateOutputRVAT.log")
+
+//     script:
+//         """
+//         set -eo pipefail
+
+//         ${params.tools.plink} \
+//             --bfile ${baseqced_basename} \
+//             --max-maf ${params.rvat_maf} \
+//             --allow-no-sex \
+//             --make-bed \
+//             --out ${baseqced_basename}_RVAT > CreateOutputRVAT.log
+//         """
+// }
+
+// Process used to flag problematic variants in term of HWE
+process HWEFlag {
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
+
+    input:
+        tuple val(baseqc_basename), path(baseqc_files)
+
+    output:
+        path(hwelist)
+        path("HWEFlag.log")
+    
+    script:
+        hwelist = "hwe_filtered.snplist"
+
+        """
+        set -eo pipefail
+
+        ${params.tools.plink} \
+            --allow-no-sex \
+            --bfile ${baseqc_basename} \
+            --hwe 5e-6 \
+            --write-snplist \
+            --out hwe_pass > HWEFlag.log
+
+        # We exclude variants which passed hwe threshold, 
+        # to only keep those which didn't pass the filter:
+        ${params.tools.plink} \
+            --allow-no-sex \
+            --bfile ${baseqc_basename} \
+            --exclude hwe_pass.snplist \
+            --write-snplist \
+            --out hwe_filtered
         """
 }
 
