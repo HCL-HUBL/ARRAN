@@ -34,6 +34,7 @@ params.qc_mind       = 0.05                 // Individuals with >5% missing geno
 params.qc_geno       = 0.05                 // Variants with >5% missing genotypes will be removed
 params.qc_remove     = ""                   // (optional) File listing IIDs and FIDs of individuals to be excluded
 params.qc_hetfilter  = "both"               // Heterozygosity filter, must be "none", "low", "high" or "both", cf: ./bin/het_check.R
+params.qc_hwe        = 5e-6
 
 params.pr_window     = 200                  // Window size for the pruning, in number of variants
 params.pr_step       = 50                   // Window sliding size in number of variants
@@ -53,6 +54,7 @@ if(params.qc_hetfilter != "none" &&
     params.qc_hetfilter != "low" && 
     params.qc_hetfilter != "high" &&  
     params.qc_hetfilter != "both")          error("\nERROR in config: 'qc_hetfilter' must be 'none', 'low', 'high' or 'both', , current value '${params.qc_hetfilter}'")
+if(params.qc_hwe > 1)                       error("\nERROR in config: 'qc_hwe' must be a <= 1, current value 'qc_hwe'")
 
 if(params.pr_window < 1)                    error("\nERROR in config: 'pr_window' must be > 0, , current value '${params.pr_window}'")
 if(params.pr_step < 1)                      error("\nERROR in config: 'pr_step' must be > 0, current value '${params.pr_step}'")
@@ -88,7 +90,7 @@ workflow QC {
         HetFilter(HetCoeff.out.het)
         CreateOutputBaseQC(BaseQC.out.plink_baseQC, Pruning.out.prune_in, HetFilter.out.valides) // Temporary output to compute the GRM and the PCA + will be use with MAF filters to generate the GWAS and RVAT sets
         
-        HWEFlag(CreateOutputBaseQC.out.plink_QCed)
+        HWEFlag(CreateOutputBaseQC.out.plink_QCed, params.qc_hwe)
         CreateSparseGRM(CreateOutputBaseQC.out.plink_QCed_pruned)
         CreateOutputGWAS(CreateOutputBaseQC.out.plink_QCed)
         // CreateOutputRVAT(CreateOutputBaseQC.out.plink_QCed)
@@ -111,7 +113,7 @@ workflow SAIGE_GWAS {
         SaigeFitNullModel(plink_QCed, pheno_file, "GWAS")
         SaigeSingleAssoc(plink_QCed, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr)
         ManhattanPlot(SaigeSingleAssoc.out.saige_sv)
-        QQPlot(SaigeSingleAssoc.out.saige_sv)
+        QQPlot(SaigeSingleAssoc.out.saige_sv, "p.value")
 
     emit:
         SaigeSingleAssoc.out.saige_sv
@@ -130,7 +132,7 @@ workflow SAIGE_RVAT {
         CreateGroupFile(plink_QCed, glist)
         SaigeGeneAssoc(plink_QCed, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr, CreateGroupFile.out.group_file)
         // ManhattanPlot(SaigeGeneAssoc.out.saige_gene)
-        // QQPlot(SaigeGeneAssoc.out.saige_gene)
+        QQPlot(SaigeGeneAssoc.out.saige_gene, "Pvalue")
 
     emit:
         SaigeGeneAssoc.out.saige_gene

@@ -37,7 +37,7 @@ if(file.exists(opt$i)) {
 
 pdf(opt$o, width = 14)
     qqman::manhattan(x = saige_sv,
-                     chr = "CHR", 
+                     chr = "CHR",
                      bp = "POS", 
                      snp = "MarkerID", 
                      p = "p.value", 

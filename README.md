@@ -169,3 +169,29 @@ The missing rsids ".", will be replaced with automatic IDs using the following f
 
 ### Rare Variants Association Tests 
 
+
+### Config parameters:
+
+| Param | Description | Default |
+| --- | --- | --- |
+| plink\_fileset | Path to the plink fileset (.bim, .bed, .fam). Format: '/path/to/example.{bed,bim,fam}' | "" |
+| covar\_file | Path to the covar file (tab delimited, needs a header and FID and IID columns) | "" |
+| outdir | Path to the output folder | ${launchDir} |
+| genome\_build | The genome build ("hg19" or "hg38") | "hg19" |
+| trait\_type | The type of the trait under study ("binary" or "quantitative") | "binary" |
+|  |  |  |
+| qc\_mind | Individuals with missing genotypes > 'qc\_mind' will be removed | 0.05 |
+| qc\_geno | Variants with missing genotypes > 'qc\_geno' will be removed | 0.05 |
+| qc\_remove | (optional) Path to the file containing individuals to remove (should contain FIDs and IIDs) | "" |
+| qc\_hetfilter | Filter to apply to remove individuals with extreme heterozygosity ("none", "both", "high" or "low"). Eg: "low" will remove individuals with extremely low heterozygosity (<3 SDs from the mean) | "both" |
+| qc\_hwe | pvalue threshold for the Hardy Weinberg Equilibrium exact test. Variants with a p-value < 'qc\_hwe' will be written to a file for further inspection | "5e-6" |
+|  |  |  |
+| pr\_window | Window size for the variant pruning step (in number of variants) | 200 |
+| pr\_step | Window sliding size for the variant pruning step (in number of variants) | 50 |
+| pr\_r2 | r2 threshold for the pruning, variants with r2 > 'pr\_r2' in a window will be removed | 0.25 |
+|  |  |  |
+| gwas\_maf | MAF threshold for the GWAS analysis. Variants with a MAF < 'gwas\_maf' will NOT be considered | 0.01 |
+|  |  |  |
+| saige\_covar | Name of the covariates to include in SAIGE model, should correspond to columns in 'covar\_file'. | "" |
+| saige\_qcovar | Name of the covariates which are categorical. | "" |
+| saige\_extension | When assigning variants to gene for the RVAT, adds this number of kbp to extend the genes | 5 |

@@ -192,6 +192,7 @@ process HWEFlag {
 
     input:
         tuple val(baseqc_basename), path(baseqc_files)
+        val(qc_hwe)
 
     output:
         path(hwelist)
@@ -206,7 +207,7 @@ process HWEFlag {
         ${params.tools.plink} \
             --allow-no-sex \
             --bfile ${baseqc_basename} \
-            --hwe 5e-6 \
+            --hwe ${qc_hwe} \
             --write-snplist \
             --out hwe_pass > HWEFlag.log
 

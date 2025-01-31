@@ -229,6 +229,7 @@ process QQPlot {
 
     input:
         path(saige_sv)
+        val(pcol)
 
     output:
         path(qqplot)
@@ -239,6 +240,6 @@ process QQPlot {
         """
         set -eo pipefail
 
-        ${params.tools.Rscript} ${projectDir}/bin/QQplot.R -i ${saige_sv} -o ${qqplot}
+        ${params.tools.Rscript} ${projectDir}/bin/QQplot.R -i ${saige_sv} -p ${pcol} -o ${qqplot}
         """
 }

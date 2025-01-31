@@ -1,4 +1,4 @@
-# Script to create a QQ plot from SAIGE single variants association output
+# Script to create a QQ plot from a tsv file containing p-valuee
 # Writes it to a pdf file
 
 if(!require(optparse, quietly = T)) install.packages(optparse) 
@@ -11,8 +11,14 @@ option_list <- list(
     make_option(c("-i", "--input"), 
                 type = "character", 
                 default = "", 
-                help = "Full path to SAIGE .single_variant.tsv file.",
+                help = "Full path to the .tsv file.",
                 metavar = "<PATH_TO_SAIGE>"),
+
+    make_option(c("-p", "--pcol"),
+                type = "character",
+                default = "p.value",
+                help = "Name of the p value column in the input file",
+                metavar = "<NAME P column>"),
 
     make_option(c("-o", "--output"),
                 type = "character",
@@ -31,10 +37,16 @@ opt <- parse_args(OptionParser(option_list = option_list))
 
 # Reading the .het file
 if(file.exists(opt$i)) {
-    if(opt$v) print(paste0("Reading the .single_variant.tsv file", opt$i))
-    saige_sv <- read.table(opt$i, header = T, sep = "\t")
+    if(opt$v) print(paste0("Reading the .tsv file", opt$i))
+    saige <- read.table(opt$i, header = T, sep = "\t")
 } else { stop(paste0("File '", opt$i, "' does not exist.")) }
 
+p_colname <- opt$p
+
+if(opt$p %in% colnames(saige)) {
+    pcolname <- opt$p
+} else { stop(paste0("Column '", pcolname, "' not found in the .tsv file."))}
+
 pdf(opt$o)
-    qqman::qq(saige_sv$p.value)
+    qqman::qq(saige[,pcolname])
 dev.off()

@@ -70,10 +70,12 @@ if(opt$f == "none") {
     stop(paste0("Option -f / --filter should either be 'none', 'low', 'high' of 'both', current value '", opt$f, "'"))
 }
 
+hetcolors <- c(low_het = "#B2182B", valid = "#009988", high_het = "#4393C3")
+
 pdf(paste0(opt$i, '.pdf'))
     ggplot(het, aes(x = F, fill = filter)) +
         geom_histogram(col = "black", bins = 50) + 
-        scale_fill_manual(values = c("#4393C3", "#B2182B", "#009988")) + 
+        scale_fill_manual(values = hetcolors) + 
         theme_bw() + ggtitle("GWAS QC - Heterozygosity")
 dev.off()
 
