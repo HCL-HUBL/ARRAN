@@ -2,6 +2,41 @@
 
 nextflow.enable.dsl = 2
 
+
+// This process will split the PAR regions into an separate chr if it does not exists
+// NON-PAR genotypes on chrX for males will be doubled
+// Unknown variant IDs "." will be transformed to "chr_pos_ref_alt"
+process GenotypesPreprocessing {
+    input:
+        tuple val(plink_basename), path(plink_files)
+
+    output:
+        tuple val(preprocessed_basename), path(preprocessed_files), emit: plink_preprocessed
+
+    script:
+        preprocessed_basename = "${plink_basename}_base"
+        preprocessed_files    = "${plink_basename}_base.{bim,bed,fam}"
+
+        """
+        set -eo pipefail
+
+        # If chrXY (PAR) is not present, we create it:
+        if ! grep -q "^25" ${plink_basename}.bim
+        then
+            ${params.tools.plink} \
+                --bfile ${plink_basename} \
+                --split-x '${params.genome_build}' \
+                --allow-no-sex \
+                --make-bed \
+                --out ${preprocessed_basename}
+        fi
+
+        # Replacing missing variant IDs '.' with 'chr_pos_ref_alt':
+        awk '{if(\$2 == ".") {print  \$1"\\t"\$1"_"\$4"_"\$5"_"\$6"\\t"\$3"\\t"\$4"\\t"\$5"\\t"\$6} else {print \$0}}' ${preprocessed_basename}.bim > tmp && mv tmp ${preprocessed_basename}.bim
+        """
+}
+
+
 process BaseQC {
     publishDir "${params.outdir}/logs/",  pattern: "BaseQC.log", mode: 'copy'
 
@@ -10,18 +45,18 @@ process BaseQC {
         path(qc_remove)
 
     output:
-        tuple val("${plink_basename}_baseQC"), path("${plink_basename}_baseQC.{bim,bed,fam}"), emit: plink_baseQC
+        tuple val(baseqc_basename), path(baseqc_files), emit: plink_baseQC
         path("BaseQC.log")
 
     script:
+        baseqc_basename = "${plink_basename}QC"
+        baseqc_files    = "${plink_basename}QC.{bim,bed,fam}"
+
         remove_cmd = ""
         if(qc_remove) remove_cmd = "--remove ${params.qc_remove}"
 
         """
         set -eo pipefail
-        
-        # Replacing missing variant IDs '.' with 'chr_pos_ref_alt':
-        awk '{if(\$2 == ".") {print  \$1"\\t"\$1"_"\$4"_"\$5"_"\$6"\\t"\$3"\\t"\$4"\\t"\$5"\\t"\$6} else {print \$0}}' ${plink_basename}.bim > tmp && mv tmp ${plink_basename}.bim
 
         ${params.tools.plink} \
             --bfile ${plink_basename} \
@@ -30,7 +65,7 @@ process BaseQC {
             ${remove_cmd} \
             --allow-no-sex \
             --make-bed \
-            --out ${plink_basename}_baseQC > BaseQC.log
+            --out ${baseqc_basename} > BaseQC.log
         """
 }
 
@@ -110,11 +145,17 @@ process CreateOutputBaseQC {
         path(valides)
 
     output:
-        tuple val("${baseqc_basename}ed"), path("${baseqc_basename}ed.{bim,bed,fam}"), emit: plink_QCed
-        tuple val("${baseqc_basename}ed_pruned"), path("${baseqc_basename}ed_pruned.{bim,bed,fam}"), emit: plink_QCed_pruned
+        tuple val(qced_basename), path(qced_files), emit: plink_QCed
+        tuple val(pruned_basename), path(pruned_files), emit: plink_QCed_pruned
         path("CreateOutputBaseQC.log")
 
     script:
+        qced_basename = "${baseqc_basename}ed"
+        qced_files    = "${baseqc_basename}ed.{bim,bed,fam}"
+
+        pruned_basename = "${baseqc_basename}ed_pruned"
+        pruned_files    = "${baseqc_basename}ed_pruned.{bim,bed,fam}"
+
         """
         set -eo pipefail
 
@@ -125,14 +166,14 @@ process CreateOutputBaseQC {
             --extract ${prune_in} \
             --allow-no-sex \
             --make-bed \
-            --out ${baseqc_basename}ed_pruned
+            --out ${pruned_basename}
 
         ${params.tools.plink} \
             --bfile ${baseqc_basename} \
             --keep ${valides} \
             --allow-no-sex \
             --make-bed \
-            --out ${baseqc_basename}ed > CreateOutputBaseQC.log
+            --out ${qced_basename} > CreateOutputBaseQC.log
         """
 }
 
@@ -144,12 +185,15 @@ process CreateOutputGWAS {
         tuple val(baseqced_basename), path(baseqced_files)
 
     output:
-        tuple val("${baseqced_basename}_GWAS"), path("${baseqced_basename}_GWAS.{bim,bed,fam}"), emit: plink_GWAS
-        path("${baseqced_basename}_GWAS.eigenval"), emit: eigenval
-        path("${baseqced_basename}_GWAS.eigenvec"), emit: eigenvec
+        tuple val(gwas_basename), path(gwas_files), emit: plink_GWAS
+        path("${gwas_basename}.eigenval"), emit: eigenval
+        path("${gwas_basename}.eigenvec"), emit: eigenvec
         path("CreateOutputGWAS.log")
 
     script:
+        gwas_basename = "${baseqced_basename}_GWAS"
+        gwas_files    = "${baseqced_basename}_GWAS.{bim,bed,fam}"
+
         """
         set -eo pipefail
 
@@ -159,7 +203,7 @@ process CreateOutputGWAS {
             --allow-no-sex \
             --pca \
             --make-bed \
-            --out ${baseqced_basename}_GWAS > CreateOutputGWAS.log
+            --out ${gwas_basename} > CreateOutputGWAS.log
         """
 }
 

@@ -11,7 +11,6 @@ include { HetFilter }               from './modules/QC.nf'
 include { HWEFlag }                 from './modules/QC.nf'
 include { CreateOutputBaseQC }      from './modules/QC.nf'
 include { CreateOutputGWAS }        from './modules/QC.nf'
-// include { CreateOutputRVAT }        from './modules/QC.nf'
 
 include { CreatePhenoFile }         from './modules/Association.nf'
 include { CreateSparseGRM }         from './modules/Association.nf'
@@ -88,13 +87,12 @@ workflow QC {
         Pruning(BaseQC.out.plink_baseQC)
         HetCoeff(BaseQC.out.plink_baseQC, Pruning.out.prune_in)
         HetFilter(HetCoeff.out.het)
-        CreateOutputBaseQC(BaseQC.out.plink_baseQC, Pruning.out.prune_in, HetFilter.out.valides) // Temporary output to compute the GRM and the PCA + will be use with MAF filters to generate the GWAS and RVAT sets
-        
+        CreateOutputBaseQC(BaseQC.out.plink_baseQC, Pruning.out.prune_in, HetFilter.out.valides) // Output to compute the GRM & PCA + 
+                                                                                                 // will be used with MAF filters to 
+                                                                                                 // generate the GWAS and RVAT sets
         HWEFlag(CreateOutputBaseQC.out.plink_QCed, params.qc_hwe)
         CreateSparseGRM(CreateOutputBaseQC.out.plink_QCed_pruned)
         CreateOutputGWAS(CreateOutputBaseQC.out.plink_QCed)
-        // CreateOutputRVAT(CreateOutputBaseQC.out.plink_QCed)
-
         PlotPCA(CreateOutputGWAS.out.plink_GWAS, CreateOutputGWAS.out.eigenvec) // PCA on GWAS output (need to remove very low maf variants to avoid errors)
 
     emit:
@@ -131,7 +129,6 @@ workflow SAIGE_RVAT {
         SaigeFitNullModel(plink_QCed, pheno_file, "RVAT")
         CreateGroupFile(plink_QCed, glist)
         SaigeGeneAssoc(plink_QCed, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr, CreateGroupFile.out.group_file)
-        // ManhattanPlot(SaigeGeneAssoc.out.saige_gene)
         QQPlot(SaigeGeneAssoc.out.saige_gene, "Pvalue")
 
     emit:

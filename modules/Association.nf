@@ -92,6 +92,7 @@ process SaigeFitNullModel {
             --covarColList=${params.saige_covar} \
             --qCovarColList=${params.saige_qcovar} \
             --sampleIDColinphenoFile=IID \
+            --isCovariateOffset=FALSE \
             ${invnorm} \
             ${cateVR_cmd} \
             --traitType=${params.trait_type} \
@@ -116,9 +117,9 @@ process SaigeSingleAssoc {
     script:
         saige_sv = "${plink_basename}_saige.single_variant.tsv"
 
-        xpar_cmd = "--is_rewrite_XnonPAR_forMales=FALSE"
-        if(params.genome_build == "hg19") xpar_cmd = "--X_PARregion='60001-2699520,154931044-155260560' --is_rewrite_XnonPAR_forMales=TRUE --sampleFile_male=males.list"
-        if(params.genome_build == "hg38") xpar_cmd = "--X_PARregion='10001-2781479,155701383-156030895' --is_rewrite_XnonPAR_forMales=TRUE --sampleFile_male=males.list"
+        // xpar_cmd = "--is_rewrite_XnonPAR_forMales=FALSE"
+        // if(params.genome_build == "hg19") xpar_cmd = "--X_PARregion='60001-2699520,154931044-155260560' --is_rewrite_XnonPAR_forMales=TRUE --sampleFile_male=males.list"
+        // if(params.genome_build == "hg38") xpar_cmd = "--X_PARregion='10001-2781479,155701383-156030895' --is_rewrite_XnonPAR_forMales=TRUE --sampleFile_male=males.list"
 
         """
         set -eo pipefail
@@ -132,7 +133,6 @@ process SaigeSingleAssoc {
             --GMMATmodelFile=${gmmat_file} \
             --varianceRatioFile=${vr_file} \
             --is_Firth_beta=TRUE --pCutoffforFirth=0.05 \
-            ${xpar_cmd} \
             --LOCO=FALSE \
             --is_output_markerList_in_groupTest=TRUE \
             --SAIGEOutputFile=${saige_sv}
@@ -197,6 +197,7 @@ process SaigeGeneAssoc {
             --varianceRatioFile=${vr_file} \
             --LOCO=FALSE \
             --is_output_markerList_in_groupTest=TRUE \
+            --is_single_in_groupTest=FALSE \
             --SAIGEOutputFile=${plink_basename}_saige_gene_based.tsv \
             --groupFile=${groupFile} \
             --annotation_in_groupTest="no_annot" \

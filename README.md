@@ -163,6 +163,8 @@ This plot can help you to find patterns in the genetic relationship between indi
 
 The missing rsids ".", will be replaced with automatic IDs using the following format: "chr_pos_ref_alt".
 
+Variants on chrX (non-par) will be doubled for males.
+
 ### GWAS association 
 
 
