@@ -2,11 +2,11 @@
 
 ## Introduction
 
-Nextflow pipeline to perform Genome Wide Association Studies (GWAS) and/or Rare Variants Association Tests (RVAT). This Readme contains step-by-step instructions to configure and run the pipeline.
+This Nextflow pipeline is designed to perform Genome Wide Association Studies (GWAS) and Rare Variants Association Tests (RVAT). This ReadMe contains step-by-step instructions to configure and run the pipeline.
 
 This pipeline uses Pink to perform QC and SAIGE to perform the association tests. It includes:
  
- - GWAS and Rare Variants Association Tests for Binary and Continuous traits
+ - GWAS and Rare Variants Association Tests for Binary or Continuous traits
 
  - Inclusion of variants on chrX
 
@@ -23,6 +23,7 @@ This pipeline uses Pink to perform QC and SAIGE to perform the association tests
     - [Quality Control](#quality-control)
     - [GWAS association](#gwas-association)
     - [Rare Variants Association Tests ](#rare-variants-association-tests)
+6. [List of config parameters](#list-of-config-parameters)
 
 ## Dependencies
 
@@ -30,8 +31,7 @@ The following tools need to be installed on your machine:
 
  - [plink v1.9](https://www.cog-genomics.org/plink/1.9/)
 
- - [R](https://cran.r-project.org/) 
-    - The R packages 'optparse', 'qqman' and 'ggplot2'
+ - [R](https://cran.r-project.org/) (and the R packages 'optparse', 'qqman' and 'ggplot2')
 
  - [SAIGE](https://saigegit.github.io/SAIGE-doc/)
 
@@ -71,8 +71,6 @@ More information about the formats can be found in the Plink documentation: http
 
 You will also need a tab-delimited [covariates file](https://www.cog-genomics.org/plink/1.9/input#covar) which **must** have the *FID* and *IID* columns and a header line.
 
-Example of a covariates file:
-
 ```
 FID    IID    AGE    SEXE    MUT1    TABAC   PC1     PC2     PC3     PC4     PC5
 C123   D001   34     1       2       0       -0.118  0.249   0.053   0.090   0.001
@@ -93,9 +91,7 @@ C123   D001
 C123   D002
 ```
 
-and assign the path to this file as the value to *qc_remove* in the config file.
-
-Keep *qc_remove = ""* if you do not wish to filter any individual.
+and assign the path to this file as the value to *qc_remove* in the config file. Keep *qc_remove = ""* if you do not wish to filter any individual.
 
 #### Heterozygosity filter
 
@@ -103,17 +99,30 @@ Individuals with extreme heterozygosity levels are usually removed from GWAS ana
 
 In HCL-GWAS, samples outside 3 standard deviations for the cohort's mean can be removed from the analysis, depending on the value set for *qc_hetfilter*:
 
+```
     - 'none': do not apply the heterozygosity filter.
     - 'low':  remove individuals with a F coefficient > 3 SDs from the cohort's mean.
     - 'high': remove individuals with a F coefficient < 3 SDs from the cohort's mean.
     - 'both': applies both of the above.
-    - *note: the F coefficient is inversely correlated with heterozygosity (so a 'high' heterozygosity corresponds to a low F value).*
+```
+    
+*Note*: the F coefficient is inversely correlated with heterozygosity (so a 'high' heterozygosity corresponds to a low F value).*
 
 *Note*: if you have admixed samples in your cohort, they will have a very low F coefficient and you should consider wether or not to remove them from the analysis, as the high heterozygosity is then expected and is not reflective of a low quality library.
 
 ## Step-by-step tutorial
 
 ### Quality Control
+
+#### Preparation of the output files
+
+The first step is to preprocess the genotype data:
+
+ - Missing rsids ".", will be replaced with automatic IDs using the following format: "chr_pos_ref_alt".
+
+ - If not present, the PAR regions for chrX and chrY will be split into a separate chromosome (option *--split-x* from plink). This will allow the tools to treat it as an autosome during the association tests.
+
+ - Variants on chrX (non-par) will be doubled for males. This reduces the type 1 error especially if there is an imbalance between males and females in the cohort ([Özbek et al.](https://doi.org/10.1002/gepi.22132)).
 
 #### Base QC on the genotype data:
 
@@ -129,9 +138,7 @@ The first step performs standard GWAS quality control:
 
  - Produce the eigenvectors and eigenvalues of the [genomic PCA](#principal-component-analysis)
 
- - Remove variants based on their Minor Allele Frequency:
-    - For the GWAS: remove variants with a MAF < *gwas_maf*
-    - For the RVAT: remove variants with a MAF > *rvat_maf*
+ - For the GWAS: remove variants with a MAF < *gwas_maf*
 
 This pipeline will output the following:
 
@@ -143,15 +150,15 @@ This pipeline will output the following:
     - **\<basename\>_baseQCed.eigenvec**: contains the PCA components
     - **\<basename\>_baseQC.het.nonvalides**: contains the samples not passing the heterozygosity filtering
 
- - ./plots/:
+ - plots/:
     - **\<basename\>_baseQC.het.pdf**: plot of the F coefficient distribution (see [Heterozygosity plot](#heterozygosity-plot))
     - **\<basename\>_baseQCed_PCA.pdf**: plot of the PCA (see: [Principal Component Analysis](#principal-component-analysis))
 
 #### Heterozygosity plot:
 
-![het_plot](./images/heterozygosity_plot.png "Heterozygosity plot representing the distribution of the F coeff in a cohort.")
-
 This plots shows the distribution of the F coefficient in the cohort. The F coefficient reports the observed and expected autosomal homozygous genotype counts for each sample. A low F value corresponds to a high heterozygosity and a high F value corresponds to a low heterozygosity and there are plotted in red and blue respectively in the plot. In HCL-GWAS.nf you can choose to remove 'none' samples, or those with 'low' heterozygosity, 'high' heterozygosity or 'both' (see [heterozygosity filter](#heterozygosity-filter)).
+
+![het_plot](./images/heterozygosity_plot.png "Heterozygosity plot representing the distribution of the F coeff in a cohort.")
 
 #### Principal Component Analysis
 
@@ -159,20 +166,33 @@ HCL-GWAS plots the PCA obtained with the [*--pca* option](https://www.cog-genomi
 
 This plot can help you to find patterns in the genetic relationship between individuals in your cohort, notably regarding ancestry. The principal components are usually given as covariates to the GWAS to account for ancestry in the association models.
 
-#### Preparation of the output files
+![PCA_plot](./images/pca_plot.png)
 
-The missing rsids ".", will be replaced with automatic IDs using the following format: "chr_pos_ref_alt".
-
-Variants on chrX (non-par) will be doubled for males.
+HCL-GWAS outputs two PCA plots: one colored with the phenotype the other with sex.
 
 ### GWAS association 
 
+The GWAS is performed with SAIGE-GENE+. First a null model, only considering the covariates impact on the phenotype, is fitted. Then the association is performed on the full model (including genotypes).
 
+The results are available under: 
+ 
+ - **saige\<basename\>_saige.single_variant.tsv**
 
 ### Rare Variants Association Tests 
 
+The RVAT is performed with SAIGE-GENE+. First, variants are grouped into genes using *glist-hg19* or *glist-hg38* depending on the value of [genome_build](#list-of-config-parameters).
 
-### Config parameters:
+As for the GWAS, a null model, only taking into account the covariates is fitted. Then each region is tested with the following masks:
+
+    - Removing variants with a MAF > 0.001
+    - Removing variants with a MAF > 0.01
+    - Removing variants with a MAF > 0.1
+
+Masks on the variants annotation will be implemented soon.
+
+## List of config parameters
+
+The table below describe all the parameters available in the config file, with their default values.
 
 | Param | Description | Default |
 | --- | --- | --- |
@@ -181,19 +201,23 @@ Variants on chrX (non-par) will be doubled for males.
 | outdir | Path to the output folder | ${launchDir} |
 | genome\_build | The genome build ("hg19" or "hg38") | "hg19" |
 | trait\_type | The type of the trait under study ("binary" or "quantitative") | "binary" |
-|  |  |  |
+
+| --- | --- | --- |
 | qc\_mind | Individuals with missing genotypes > 'qc\_mind' will be removed | 0.05 |
 | qc\_geno | Variants with missing genotypes > 'qc\_geno' will be removed | 0.05 |
 | qc\_remove | (optional) Path to the file containing individuals to remove (should contain FIDs and IIDs) | "" |
 | qc\_hetfilter | Filter to apply to remove individuals with extreme heterozygosity ("none", "both", "high" or "low"). Eg: "low" will remove individuals with extremely low heterozygosity (<3 SDs from the mean) | "both" |
 | qc\_hwe | pvalue threshold for the Hardy Weinberg Equilibrium exact test. Variants with a p-value < 'qc\_hwe' will be written to a file for further inspection | "5e-6" |
-|  |  |  |
+
+| --- | --- | --- |
 | pr\_window | Window size for the variant pruning step (in number of variants) | 200 |
 | pr\_step | Window sliding size for the variant pruning step (in number of variants) | 50 |
 | pr\_r2 | r2 threshold for the pruning, variants with r2 > 'pr\_r2' in a window will be removed | 0.25 |
-|  |  |  |
+
+| --- | --- | --- |
 | gwas\_maf | MAF threshold for the GWAS analysis. Variants with a MAF < 'gwas\_maf' will NOT be considered | 0.01 |
-|  |  |  |
+
+| --- | --- | --- |
 | saige\_covar | Name of the covariates to include in SAIGE model, should correspond to columns in 'covar\_file'. | "" |
 | saige\_qcovar | Name of the covariates which are categorical. | "" |
 | saige\_extension | When assigning variants to gene for the RVAT, adds this number of kbp to extend the genes | 5 |
