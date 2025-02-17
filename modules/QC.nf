@@ -20,8 +20,11 @@ process GenotypesPreprocessing {
         """
         set -eo pipefail
 
+        # Replacing missing variant IDs '.' with 'chr_pos_ref_alt':
+        awk '{if(\$2 == ".") {print  \$1"\\t"\$1"_"\$4"_"\$5"_"\$6"\\t"\$3"\\t"\$4"\\t"\$5"\\t"\$6} else {print \$0}}' ${plink_basename}.bim > tmp && mv tmp ${plink_basename}.bim
+
         # If chrXY (PAR) is not present, we create it:
-        if ! grep -q "^25" ${plink_basename}.bim
+        if ! grep -q "^25" ${plink_basename}.bim;
         then
             ${params.tools.plink} \
                 --bfile ${plink_basename} \
@@ -29,10 +32,13 @@ process GenotypesPreprocessing {
                 --allow-no-sex \
                 --make-bed \
                 --out ${preprocessed_basename}
-        fi
-
-        # Replacing missing variant IDs '.' with 'chr_pos_ref_alt':
-        awk '{if(\$2 == ".") {print  \$1"\\t"\$1"_"\$4"_"\$5"_"\$6"\\t"\$3"\\t"\$4"\\t"\$5"\\t"\$6} else {print \$0}}' ${preprocessed_basename}.bim > tmp && mv tmp ${preprocessed_basename}.bim
+        else
+            ${params.tools.plink} \
+                --bfile ${plink_basename} \
+                --allow-no-sex \
+                --make-bed \
+                --out ${preprocessed_basename}
+        fi 
         """
 }
 
@@ -57,12 +63,23 @@ process BaseQC {
 
         """
         set -eo pipefail
-
+        
+        # Running "geno" first, to avoid removing individuals when there are sets 
+        # of variants with high missing % in a subset of samples:
         ${params.tools.plink} \
             --bfile ${plink_basename} \
-            --geno ${params.qc_geno} \
-            --mind ${params.qc_mind} \
             ${remove_cmd} \
+            --geno ${params.qc_geno} \
+            --allow-no-sex \
+            --write-snplist \
+            --out valid_snps
+
+        # We only perform "mind" on the list of variants extracted before:
+        ${params.tools.plink} \
+            --bfile ${plink_basename} \
+           	--extract valid_snps.snplist \
+            ${remove_cmd} \
+            --mind ${params.qc_mind} \
             --allow-no-sex \
             --make-bed \
             --out ${baseqc_basename} > BaseQC.log

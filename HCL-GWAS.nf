@@ -3,6 +3,7 @@
 nextflow.enable.dsl = 2
 
 // Importing Processes from modules:
+include { GenotypesPreprocessing }  from './modules/QC.nf'
 include { BaseQC }                  from './modules/QC.nf'
 include { PlotPCA }                 from './modules/QC.nf'
 include { Pruning }                 from './modules/QC.nf'
@@ -83,7 +84,8 @@ workflow QC {
         remove_ch
 
     main:
-        BaseQC(plink_ch, remove_ch)
+        GenotypesPreprocessing(plink_ch)
+        BaseQC(GenotypesPreprocessing.out.plink_preprocessed, remove_ch)
         Pruning(BaseQC.out.plink_baseQC)
         HetCoeff(BaseQC.out.plink_baseQC, Pruning.out.prune_in)
         HetFilter(HetCoeff.out.het)
