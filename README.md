@@ -21,6 +21,7 @@ This pipeline uses Pink to perform QC and SAIGE to perform the association tests
     - [Input data and config](#input-data-and-config)
 5. [Step-by-step tutorial](#step-by-step-tutorial)    
     - [Quality Control](#quality-control)
+    - [Admixture](#admixture)
     - [GWAS association](#gwas-association)
     - [Rare Variants Association Tests ](#rare-variants-association-tests)
 6. [List of config parameters](#list-of-config-parameters)
@@ -172,7 +173,9 @@ HCL-GWAS outputs two PCA plots: one colored with the phenotype the other with se
 
 #### QQplot
 
+### Admixture
 
+(Alexander et al., [2009](https://pmc.ncbi.nlm.nih.gov/articles/PMC2752134/)).
 
 ### GWAS association 
 

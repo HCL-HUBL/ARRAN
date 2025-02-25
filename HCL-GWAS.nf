@@ -12,6 +12,8 @@ include { HetFilter }               from './modules/QC.nf'
 include { HWEFlag }                 from './modules/QC.nf'
 include { CreateOutputBaseQC }      from './modules/QC.nf'
 include { CreateOutputGWAS }        from './modules/QC.nf'
+include { RunAdmixture }            from './modules/QC.nf'
+include { PlotAdmixture }           from './modules/QC.nf'
 
 include { CreatePhenoFile }         from './modules/Association.nf'
 include { CreateSparseGRM }         from './modules/Association.nf'
@@ -96,6 +98,9 @@ workflow QC {
         CreateSparseGRM(CreateOutputBaseQC.out.plink_QCed_pruned)
         CreateOutputGWAS(CreateOutputBaseQC.out.plink_QCed)
         PlotPCA(CreateOutputGWAS.out.plink_GWAS, CreateOutputGWAS.out.eigenvec) // PCA on GWAS output (need to remove very low maf variants to avoid errors)
+
+        RunAdmixture(CreateOutputBaseQC.out.plink_QCed_pruned)
+        PlotAdmixture(RunAdmixture.out.admixture_table)
 
     emit:
         plink_QCed_gwas = CreateOutputGWAS.out.plink_GWAS

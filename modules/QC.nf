@@ -2,7 +2,6 @@
 
 nextflow.enable.dsl = 2
 
-
 // This process will split the PAR regions into an separate chr if it does not exists
 // NON-PAR genotypes on chrX for males will be doubled
 // Unknown variant IDs "." will be transformed to "chr_pos_ref_alt"
@@ -28,7 +27,7 @@ process GenotypesPreprocessing {
         then
             ${params.tools.plink} \
                 --bfile ${plink_basename} \
-                --split-x '${params.genome_build}' \
+                --split-x '${params.genome_build}' 'no-fail' \
                 --allow-no-sex \
                 --make-bed \
                 --out ${preprocessed_basename}
@@ -149,6 +148,51 @@ process HetFilter {
         ${params.tools.Rscript} ${projectDir}/bin/het_check.R \
             -i ${geno_het} \
             -f ${params.qc_hetfilter}
+        """
+}
+
+
+process RunAdmixture {
+    publishDir "${params.outdir}/admixture/", mode: 'copy'
+
+    input:
+        tuple val(pruned_basename), path(pruned_files)
+
+    output:
+        path(admixture_table), emit: admixture_table
+        path(admixture_log)
+    
+    script:
+        admixture_table = "${pruned_basename}.${params.admixture_K}.Q"
+        admixture_log = "admixture_K${params.admixture_K}.log"
+        
+        """
+        set -eo pipefail
+
+        ${params.tools.admixture} --cv ${pruned_basename}.bed ${params.admixture_K} > ${admixture_log}; 
+        """
+}
+
+
+process PlotAdmixture {
+    publishDir "${params.outdir}/plots/", mode: 'copy'
+
+    input:
+        path(admixture_table)
+
+    output:
+        path(admixture_barplot)
+
+    script:
+        admixture_barplot = "${admixture_table}.pdf"
+
+        """
+        set -eo pipefail
+
+        ${params.tools.Rscript} ${projectDir}/bin/admixture.R \
+            -i ${admixture_table} \
+            -k ${params.admixture_K} \
+            -o ${admixture_barplot}
         """
 }
 

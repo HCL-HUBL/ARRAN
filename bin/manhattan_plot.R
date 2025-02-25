@@ -40,7 +40,9 @@ pdf(opt$o, width = 14)
                      chr = "CHR",
                      bp = "POS", 
                      snp = "MarkerID", 
-                     p = "p.value", 
+                     p = "p.value",
+                     suggestiveline = -log10( 1 / nrow(saige_sv)),
+                     genomewideline = -log10( 0.05 / nrow(saige_sv)),
                      col = c("#77AADD", "#EE8866"),
                      main = "Manhattan Plot",
                      cex = 0.6, cex.axis = 0.9)
