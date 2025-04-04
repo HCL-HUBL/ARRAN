@@ -5,6 +5,8 @@ nextflow.enable.dsl = 2
 // Creates the phenotype file for SAIGE which contains the samples IIDs and 
 // the phenotypes + covariates 
 process CreatePhenoFile {
+    publishDir "${params.outdir}/saige/", mode: 'copy'
+    
     input:
         tuple val(plink_basename), path(plink_files)
         path(eigenvec)

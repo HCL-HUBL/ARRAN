@@ -17,7 +17,7 @@ This pipeline uses Pink to perform QC and SAIGE to perform the association tests
 1. [Introduction](#introduction)
 2. [Table of Contents](#table-of-contents)
 3. [Dependencies](#dependencies)
-4. [Test Dataset]
+4. [Test Dataset](#test-dataset)
 5. [The Pipeline](#the-pipeline)
     - [Input data and config](#input-data-and-config)
 6. [Step-by-step tutorial](#step-by-step-tutorial)    
