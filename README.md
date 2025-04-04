@@ -17,14 +17,15 @@ This pipeline uses Pink to perform QC and SAIGE to perform the association tests
 1. [Introduction](#introduction)
 2. [Table of Contents](#table-of-contents)
 3. [Dependencies](#dependencies)
-4. [The Pipeline](#the-pipeline)
+4. [Test Dataset]
+5. [The Pipeline](#the-pipeline)
     - [Input data and config](#input-data-and-config)
-5. [Step-by-step tutorial](#step-by-step-tutorial)    
+6. [Step-by-step tutorial](#step-by-step-tutorial)    
     - [Quality Control](#quality-control)
     - [Admixture](#admixture)
     - [GWAS association](#gwas-association)
     - [Rare Variants Association Tests ](#rare-variants-association-tests)
-6. [List of config parameters](#list-of-config-parameters)
+7. [List of config parameters](#list-of-config-parameters)
 
 ## Dependencies
 
@@ -47,6 +48,20 @@ apptainer build HCL-GWAS.sif HCL-GWAS.def
 ```
 
 *Note: The scripts were developed and tested on Linux (Debian release 11) using nextflow v22.04.5 and R v4.4.1*
+
+## Test Dataset
+
+A test dataset is available in "./test_dataset/" and can be run with:
+
+```shell
+cd /path/to/HCL-GWAS/
+
+apptainer build HCL-GWAS_20250224-152241.simg HCL-GWAS.def
+
+cd ./test_dataset/
+
+nextflow run ../HCL-GWAS.nf -c HCL-GWAS_test.conf
+```
 
 ## The Pipeline
 

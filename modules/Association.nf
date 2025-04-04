@@ -7,6 +7,7 @@ nextflow.enable.dsl = 2
 process CreatePhenoFile {
     input:
         tuple val(plink_basename), path(plink_files)
+        path(eigenvec)
         path(covar_file)
     
     output:
@@ -23,8 +24,9 @@ process CreatePhenoFile {
 
         ${params.tools.Rscript} ${projectDir}/bin/create_phenoFile.R \
             -f ${plink_basename}.fam \
-            ${binary_flag} \
-            -c ${covar_file}
+            -e ${eigenvec} \
+            -c ${covar_file} \
+            ${binary_flag}
         """
 }
 

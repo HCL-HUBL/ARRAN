@@ -105,6 +105,7 @@ workflow QC {
     emit:
         plink_QCed_gwas = CreateOutputGWAS.out.plink_GWAS
         plink_QCed_rvat = CreateOutputBaseQC.out.plink_QCed
+        eigenvec        = CreateOutputGWAS.out.eigenvec
 }
 
 
@@ -151,9 +152,11 @@ workflow {
     // Extract the QCed genotypes, one for the GWAS (with common variants), one for the RVAT (with rare variants):
     plink_QCed_gwas = QC.out.plink_QCed_gwas
     plink_QCed_rvat = QC.out.plink_QCed_rvat
+    eigenvec        = QC.out.eigenvec
 
     // Create the phenotype file and run SAIGE+ (GWAS and RVAT):
-    pheno_file_ch = CreatePhenoFile(plink_QCed_gwas, covar_file_ch) // only needs the .fam file, so it should not matter if we use the gwas or rvat plinks
+    pheno_file_ch = CreatePhenoFile(plink_QCed_gwas, eigenvec, covar_file_ch) // only needs the .fam file, so it should not matter if we use the gwas or rvat plinks
+    
     SAIGE_GWAS(plink_QCed_gwas, pheno_file_ch)
     SAIGE_RVAT(plink_QCed_rvat, pheno_file_ch, glist_ch)
 }
