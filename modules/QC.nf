@@ -239,21 +239,20 @@ process CreateOutputBaseQC {
 }
 
 
-process CreateOutputGWAS {
+process CreateEigenvec {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
 
     input:
         tuple val(baseqced_basename), path(baseqced_files)
-
+    
     output:
-        tuple val(gwas_basename), path(gwas_files), emit: plink_GWAS
-        path("${gwas_basename}.eigenval"), emit: eigenval
-        path("${gwas_basename}.eigenvec"), emit: eigenvec
-        path("CreateOutputGWAS.log")
-
+        path("${eigen_basename}.eigenval"), emit: eigenval
+        path("${eigen_basename}.eigenvec"), emit: eigenvec
+        path("CreateEigenvec.log")
+    
     script:
-        gwas_basename = "${baseqced_basename}_GWAS"
-        gwas_files    = "${baseqced_basename}_GWAS.{bim,bed,fam}"
+        eigen_basename = "${baseqced_basename}_PCA"
+        eigen_files    = "${baseqced_basename}_PCA.{bim,bed,fam}"
 
         """
         set -eo pipefail
@@ -264,32 +263,68 @@ process CreateOutputGWAS {
             --allow-no-sex \
             --pca \
             --make-bed \
+            --out ${eigen_basename} > CreateEigenvec.log
+        """
+}
+
+
+process CreateOutputGWAS {
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
+
+    input:
+        tuple val(baseqced_basename), path(baseqced_files)
+        path(saige_regions)
+
+    output:
+        tuple val(gwas_basename), path(gwas_files), emit: plink_GWAS
+        path("CreateOutputGWAS.log")
+
+    script:
+        gwas_basename = "${baseqced_basename}_GWAS"
+        gwas_files    = "${baseqced_basename}_GWAS.{bim,bed,fam}"
+
+        extract_cmd = ""
+        if(saige_regions) extract_cmd = "--extract range ${params.saige_regions}"
+
+        """
+        set -eo pipefail
+
+        ${params.tools.plink} \
+            --bfile ${baseqced_basename} \
+            --maf ${params.gwas_maf} \
+            --allow-no-sex \
+            ${extract_cmd} \
+            --make-bed \
             --out ${gwas_basename} > CreateOutputGWAS.log
         """
 }
 
-// process CreateOutputRVAT {
-//     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
+process CreateOutputRVAT {
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
 
-//     input:
-//         tuple val(baseqced_basename), path(baseqced_files)
+    input:
+        tuple val(baseqced_basename), path(baseqced_files)
+        path(saige_regions)
 
-//     output:
-//         tuple val("${baseqced_basename}_RVAT"), path("${baseqced_basename}_RVAT.{bim,bed,fam}"), emit: plink_RVAT
-//         path("CreateOutputRVAT.log")
+    output:
+        tuple val("${baseqced_basename}_RVAT"), path("${baseqced_basename}_RVAT.{bim,bed,fam}"), emit: plink_RVAT
+        path("CreateOutputRVAT.log")
 
-//     script:
-//         """
-//         set -eo pipefail
+    script:
+        extract_cmd = ""
+        if(saige_regions) extract_cmd = "--extract range ${params.saige_regions}"
 
-//         ${params.tools.plink} \
-//             --bfile ${baseqced_basename} \
-//             --max-maf ${params.rvat_maf} \
-//             --allow-no-sex \
-//             --make-bed \
-//             --out ${baseqced_basename}_RVAT > CreateOutputRVAT.log
-//         """
-// }
+        """
+        set -eo pipefail
+
+        ${params.tools.plink} \
+            --bfile ${baseqced_basename} \
+            --allow-no-sex \
+            ${extract_cmd} \
+            --make-bed \
+            --out ${baseqced_basename}_RVAT > CreateOutputRVAT.log
+        """
+}
 
 // Process used to flag problematic variants in term of HWE
 process HWEFlag {
