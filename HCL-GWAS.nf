@@ -32,6 +32,7 @@ include { QQPlot }                  from './modules/Association.nf'
 params.plink_fileset    = ""                   // The path to the plink fileset (/path/to/example.{bim,bed,fam})
 params.covar_file       = ""
 params.outdir           = "${launchDir}"       // The output directory where the outputs will be stored
+params.out_basename     = "hcl_gwas"           // Basename of the output files
 params.genome_build     = "hg19"               // Accepts 'hg19' or 'hg38', used to define PAR regions
 params.trait_type       = "binary"             // Trait type, must be 'binary' or 'quantitative'
 
@@ -117,6 +118,8 @@ workflow QC {
 
         CreateEigenvec(CreateOutputBaseQC.out.plink_QCed)
         PlotPCA(CreateOutputBaseQC.out.plink_QCed, CreateEigenvec.out.eigenvec) // PCA on GWAS output (need to remove very low maf variants to avoid errors)
+
+        SplitX(CreateOutputBaseQC.out.plink_QCed)
 
         CreateOutputGWAS(CreateOutputBaseQC.out.plink_QCed, regions_ch)
         CreateOutputRVAT(CreateOutputBaseQC.out.plink_QCed, regions_ch)
