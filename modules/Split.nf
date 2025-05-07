@@ -8,7 +8,7 @@ nextflow.enable.dsl = 2
 
 // Process that will split the SNPs belonging to the autosomes (1-22 + 25(PAR)) vs. chrX (23)
 process Split_Autosomes_ChrX {
-    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "Split/$it" }, mode: 'copy'
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "split/$it" }, mode: 'copy'
 
     input:
         tuple val(baseqced_basename), path(baseqced_files)

@@ -19,14 +19,15 @@ include { Split_Autosomes_ChrX }    from './modules/Split.nf'
 include { CreateOutputGWAS }        from './modules/Split.nf'
 include { CreateOutputRVAT }        from './modules/Split.nf'
 
-include { CreatePhenoFile }         from './modules/Association.nf'
-include { CreateSparseGRM }         from './modules/Association.nf'
-include { SaigeFitNullModel }       from './modules/Association.nf'
-include { SaigeSingleAssoc }        from './modules/Association.nf'
-include { CreateGroupFile }         from './modules/Association.nf'
-include { SaigeGeneAssoc }          from './modules/Association.nf'
-include { ManhattanPlot }           from './modules/Association.nf'
-include { QQPlot }                  from './modules/Association.nf'
+include { CreatePhenoFile }         from './modules/SAIGE.nf'
+include { CreateSparseGRM }         from './modules/SAIGE.nf'
+include { SaigeFitNullModel }       from './modules/SAIGE.nf'
+include { SaigeSingleAssoc }        from './modules/SAIGE.nf'
+include { CreateGroupFile }         from './modules/SAIGE.nf'
+include { SaigeGeneAssoc }          from './modules/SAIGE.nf'
+
+include { ManhattanPlot }           from './modules/Downstream.nf'
+include { QQPlot }                  from './modules/Downstream.nf'
 
 
 // Initialising the options with default values:
