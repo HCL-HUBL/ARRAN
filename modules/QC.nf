@@ -85,6 +85,7 @@ process BaseQC {
         """
 }
 
+
 process Pruning {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
 
@@ -106,6 +107,7 @@ process Pruning {
             --out ${baseqc_basename} > Pruning.log
         """
 }
+
 
 process HetCoeff {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
@@ -129,6 +131,7 @@ process HetCoeff {
             --out ${baseqc_basename} > HetCoeff.log
         """
 }
+
 
 process HetFilter {
     publishDir "${params.outdir}/", saveAs: { it.endsWith("valides") ? "QC/$it" : "plots/$it" }, mode: 'copy'
@@ -267,86 +270,6 @@ process CreateEigenvec {
         """
 }
 
-// Process to split the genotype files into two sets: 
-// (i) containing the autosomes + PAR regions (will be processed with SAIGE)
-// (ii) the other containing chrX (will have additional sex-specific QCs and will be processed with XWAS)
-// For now chrY is ignored (ideally, a process performing a sex-stratified association on chrY should be implemented)
-// process SplitX {
-//     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
-
-//     input:
-//         tuple val(baseqced_basename), path(baseqced_files)
-
-//     output:
-//         tuple val(autosomes_basename), path(autosomes_files)
-//         tuple val(x_basename), path(x_files)
-//         path("SplitX.log")
-
-//     script:
-//         autosomes_basename = ""
-
-//         """
-
-//         """
-// }
-
-process CreateOutputGWAS {
-    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
-
-    input:
-        tuple val(baseqced_basename), path(baseqced_files)
-        path(saige_regions)
-
-    output:
-        tuple val(gwas_basename), path(gwas_files), emit: plink_GWAS
-        path("CreateOutputGWAS.log")
-
-    script:
-        gwas_basename = "${baseqced_basename}_GWAS"
-        gwas_files    = "${baseqced_basename}_GWAS.{bim,bed,fam}"
-
-        extract_cmd = ""
-        if(saige_regions) extract_cmd = "--extract range ${params.saige_regions}"
-
-        """
-        set -eo pipefail
-
-        ${params.tools.plink} \
-            --bfile ${baseqced_basename} \
-            --maf ${params.gwas_maf} \
-            --allow-no-sex \
-            ${extract_cmd} \
-            --make-bed \
-            --out ${gwas_basename} > CreateOutputGWAS.log
-        """
-}
-
-process CreateOutputRVAT {
-    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
-
-    input:
-        tuple val(baseqced_basename), path(baseqced_files)
-        path(saige_regions)
-
-    output:
-        tuple val("${baseqced_basename}_RVAT"), path("${baseqced_basename}_RVAT.{bim,bed,fam}"), emit: plink_RVAT
-        path("CreateOutputRVAT.log")
-
-    script:
-        extract_cmd = ""
-        if(saige_regions) extract_cmd = "--extract range ${params.saige_regions}"
-
-        """
-        set -eo pipefail
-
-        ${params.tools.plink} \
-            --bfile ${baseqced_basename} \
-            --allow-no-sex \
-            ${extract_cmd} \
-            --make-bed \
-            --out ${baseqced_basename}_RVAT > CreateOutputRVAT.log
-        """
-}
 
 // Process used to flag problematic variants in term of HWE
 process HWEFlag {
