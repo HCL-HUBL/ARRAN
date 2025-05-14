@@ -122,8 +122,8 @@ workflow QC {
 
         CreateSparseGRM(CreateOutputBaseQC.out.plink_QCed_pruned)
 
-        CreateEigenvec(CreateOutputBaseQC.out.plink_QCed)
-        PlotPCA(CreateOutputBaseQC.out.plink_QCed, CreateEigenvec.out.eigenvec)
+        CreateEigenvec(CreateOutputBaseQC.out.plink_QCed_pruned)
+        PlotPCA(CreateOutputBaseQC.out.plink_QCed_pruned, CreateEigenvec.out.eigenvec)
 
         RunAdmixture(CreateOutputBaseQC.out.plink_QCed_pruned)
         PlotAdmixture(RunAdmixture.out.admixture_table)
@@ -144,8 +144,8 @@ workflow SAIGE_GWAS {
     main:
         CreateOutputGWAS(autosomes_QCed, regions_ch)
         
-        SaigeFitNullModel(autosomes_QCed, phenoFile_ch, "GWAS")
-        SaigeSingleAssoc(autosomes_QCed, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr)
+        SaigeFitNullModel(CreateOutputGWAS.out.plink_GWAS, phenoFile_ch, "GWAS")
+        SaigeSingleAssoc(CreateOutputGWAS.out.plink_GWAS, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr)
 
         ManhattanPlot(SaigeSingleAssoc.out.saige_sv)
         QQPlot(SaigeSingleAssoc.out.saige_sv, "p.value")
@@ -167,8 +167,8 @@ workflow SAIGE_RVAT {
         CreateOutputRVAT(autosomes_QCed, regions_ch)
 
         SaigeFitNullModel(autosomes_QCed, phenoFile_ch, "RVAT")
-        CreateGroupFile(autosomes_QCed, glist)
-        SaigeGeneAssoc(autosomes_QCed, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr, CreateGroupFile.out.group_file)
+        CreateGroupFile(CreateOutputRVAT.out.plink_RVAT, glist)
+        SaigeGeneAssoc(CreateOutputRVAT.out.plink_RVAT, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr, CreateGroupFile.out.group_file)
 
         QQPlot(SaigeGeneAssoc.out.saige_gene, "Pvalue")
 
@@ -176,6 +176,13 @@ workflow SAIGE_RVAT {
         SaigeGeneAssoc.out.saige_gene
 }
 
+// workflow XWAS {
+//     take:
+//         plink_chrX
+
+//     main:
+        
+// }
 
 // Main workflow, calling all the other subworkflow:
 workflow {
