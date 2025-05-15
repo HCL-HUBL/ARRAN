@@ -120,8 +120,6 @@ workflow QC {
         
         HWEFlag(CreateOutputBaseQC.out.plink_QCed, params.qc_hwe)
 
-        CreateSparseGRM(CreateOutputBaseQC.out.plink_QCed_pruned)
-
         CreateEigenvec(CreateOutputBaseQC.out.plink_QCed_pruned)
         PlotPCA(CreateOutputBaseQC.out.plink_QCed_pruned, CreateEigenvec.out.eigenvec)
 
@@ -129,8 +127,9 @@ workflow QC {
         PlotAdmixture(RunAdmixture.out.admixture_table)
 
     emit:
-        plink_QCed = CreateOutputBaseQC.out.plink_QCed
-        eigenvec   = CreateEigenvec.out.eigenvec
+        plink_QCed          = CreateOutputBaseQC.out.plink_QCed
+        plink_QCed_pruned   = CreateOutputBaseQC.out.plink_QCed_pruned
+        eigenvec            = CreateEigenvec.out.eigenvec
 }
 
 
@@ -138,14 +137,16 @@ workflow QC {
 workflow SAIGE_GWAS {
     take:
         autosomes_QCed
+        sparse_GRM
+        sparse_ids
         phenoFile_ch
         regions_ch
 
     main:
         CreateOutputGWAS(autosomes_QCed, regions_ch)
         
-        SaigeFitNullModel(CreateOutputGWAS.out.plink_GWAS, phenoFile_ch, "GWAS")
-        SaigeSingleAssoc(CreateOutputGWAS.out.plink_GWAS, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr)
+        SaigeFitNullModel(CreateOutputGWAS.out.plink_GWAS, sparse_GRM, sparse_ids, phenoFile_ch, "GWAS")
+        SaigeSingleAssoc(CreateOutputGWAS.out.plink_GWAS, sparse_GRM, sparse_ids, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr)
 
         ManhattanPlot(SaigeSingleAssoc.out.saige_sv)
         QQPlot(SaigeSingleAssoc.out.saige_sv, "p.value")
@@ -159,6 +160,8 @@ workflow SAIGE_GWAS {
 workflow SAIGE_RVAT {
     take:
         autosomes_QCed
+        sparse_GRM
+        sparse_ids
         phenoFile_ch
         regions_ch
         glist
@@ -166,9 +169,9 @@ workflow SAIGE_RVAT {
     main:
         CreateOutputRVAT(autosomes_QCed, regions_ch)
 
-        SaigeFitNullModel(autosomes_QCed, phenoFile_ch, "RVAT")
+        SaigeFitNullModel(CreateOutputRVAT.out.plink_RVAT, sparse_GRM, sparse_ids, phenoFile_ch, "RVAT")
         CreateGroupFile(CreateOutputRVAT.out.plink_RVAT, glist)
-        SaigeGeneAssoc(CreateOutputRVAT.out.plink_RVAT, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr, CreateGroupFile.out.group_file)
+        SaigeGeneAssoc(CreateOutputRVAT.out.plink_RVAT, sparse_GRM, sparse_ids, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr, CreateGroupFile.out.group_file)
 
         QQPlot(SaigeGeneAssoc.out.saige_gene, "Pvalue")
 
@@ -186,16 +189,32 @@ workflow SAIGE_RVAT {
 
 // Main workflow, calling all the other subworkflow:
 workflow {
+
     // Perform base Quality Control on the genotype data:
     QC(plink_ch, remove_ch)
 
-    // Split the results into autosomes and chrX, as they will be subjected to different treatments:
+    // Create the sparse GRM, split autosomes and chrX and create the phenotype Files
+    CreateSparseGRM(QC.out.plink_QCed_pruned)
+
     Split_Autosomes_ChrX(QC.out.plink_QCed)
 
+    CreatePhenoFile(Split_Autosomes_ChrX.out.autosomes,  // In practice: we only need the .fam file not the complete plink fileset
+                    QC.out.eigenvec, 
+                    covar_file_ch)
+    
     // Run SAIGE+ (GWAS and RVAT) on the autosomes:
-    phenoFile_ch = CreatePhenoFile(Split_Autosomes_ChrX.out.autosomes, QC.out.eigenvec, covar_file_ch) // In practice: we only need the .fam file not the complete plink fileset
-    SAIGE_GWAS(Split_Autosomes_ChrX.out.autosomes, phenoFile_ch, regions_ch)
-    SAIGE_RVAT(Split_Autosomes_ChrX.out.autosomes, phenoFile_ch, regions_ch, glist_ch)
+    SAIGE_GWAS(Split_Autosomes_ChrX.out.autosomes,
+               CreateSparseGRM.out.sparseGRM,
+               CreateSparseGRM.out.sampleIDs,
+               CreatePhenoFile.out.phenoFile, 
+               regions_ch)
+
+    // SAIGE_RVAT(Split_Autosomes_ChrX.out.autosomes,
+    //            CreateSparseGRM.out.sparseGRM,
+    //            CreateSparseGRM.out.sampleIDs,
+    //            CreatePhenoFile.out.phenoFile,
+    //            regions_ch,
+    //            glist_ch)
 
     // Run XWAS (chrX-specific QC, GWAS and RVAT) on chrX:
     

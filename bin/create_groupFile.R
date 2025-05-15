@@ -33,7 +33,7 @@ annot$anno <- 'no_annot'
 colnames(annot) <- c("var", "ID", "anno") # We use the colnames to have the "correct" name for the 2nd column of the groupFile
 
 # Group by the gene name "ID":
-annot <- aggregate(x = annot, by = list(annot$ID, annot$anno), FUN =  paste, simplify = T)
+annot <- aggregate(x = annot, by = list(annot$ID, annot$anno), FUN = paste, simplify = F)
 # Then group the dataframe by genes to have the variants and annotations and two different lines:
 annot <- annot[,c("Group.1", "var", "anno")]
 

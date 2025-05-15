@@ -34,7 +34,7 @@ process QQPlot {
         path(qqplot)
 
     script:
-        qqplot = "QQplot_${saige_sv.baseName}.pdf"
+        qqplot = "QQplot_${saige_sv.baseName}.png"
 
         """
         set -eo pipefail

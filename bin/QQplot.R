@@ -41,12 +41,10 @@ if(file.exists(opt$i)) {
     saige <- read.table(opt$i, header = T, sep = "\t")
 } else { stop(paste0("File '", opt$i, "' does not exist.")) }
 
-p_colname <- opt$p
-
 if(opt$p %in% colnames(saige)) {
     pcolname <- opt$p
 } else { stop(paste0("Column '", pcolname, "' not found in the .tsv file."))}
 
-pdf(opt$o)
+png(opt$o, height = 14, width = 14, res = 300, unit = "cm")
     qqman::qq(saige[,pcolname])
 dev.off()
