@@ -209,12 +209,12 @@ workflow {
                CreatePhenoFile.out.phenoFile, 
                regions_ch)
 
-    // SAIGE_RVAT(Split_Autosomes_ChrX.out.autosomes,
-    //            CreateSparseGRM.out.sparseGRM,
-    //            CreateSparseGRM.out.sampleIDs,
-    //            CreatePhenoFile.out.phenoFile,
-    //            regions_ch,
-    //            glist_ch)
+    SAIGE_RVAT(Split_Autosomes_ChrX.out.autosomes,
+               CreateSparseGRM.out.sparseGRM,
+               CreateSparseGRM.out.sampleIDs,
+               CreatePhenoFile.out.phenoFile,
+               regions_ch,
+               glist_ch)
 
     // Run XWAS (chrX-specific QC, GWAS and RVAT) on chrX:
     

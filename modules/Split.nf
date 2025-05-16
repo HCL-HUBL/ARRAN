@@ -102,7 +102,6 @@ process CreateOutputRVAT {
 
         ${params.tools.plink} \
             --bfile ${baseqced_basename} \
-            --max-maf ${params.rvat_maf} \
             --allow-no-sex \
             ${extract_cmd} \
             --make-bed \
