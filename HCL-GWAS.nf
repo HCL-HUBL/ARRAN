@@ -26,6 +26,8 @@ include { SaigeSingleAssoc }        from './modules/SAIGE.nf'
 include { CreateGroupFile }         from './modules/SAIGE.nf'
 include { SaigeGeneAssoc }          from './modules/SAIGE.nf'
 
+include { ChrX_specific_QC }        from './modules/XWAS.nf'
+
 include { ManhattanPlot }           from './modules/Downstream.nf'
 include { QQPlot }                  from './modules/Downstream.nf'
 
@@ -58,12 +60,14 @@ params.rvat_maf         = 0.01                 // Variants with a MAF > 'rvat_ma
 // Admixture:
 params.admixture_K      = 2                    // Number of expected populations in the dataset
 
-// SAIGE options
+// SAIGE options:
 params.saige_covar      = "AGE,SEX,PC1,PC2"    // List of all covariates to include in the model, comma separated
 params.saige_qcovar     = "SEX"                // List the covariates which are categorical  
 params.saige_regions    = ""                   // (optional) list of regions to analyse (bed format)
 params.saige_extension  = 5                    // When assigning SNPs to genes, extends the gene bounds by this many kbp
 
+// XWAS options:
+params.alpha            = 0.05                 // Significance for the X-specific QC steps (bonferroni correction will be applied to this threshold)
 
 // Checking input values:
 if(params.plink_fileset == "")              error("\nERROR in config: 'plink_fileset' is required")
@@ -94,6 +98,7 @@ if(params.rvat_maf < 0)                     error("\nERROR in config: 'rvat_maf'
 
 if(params.admixture_K <= 0)                 error("\nERROR in config: 'admixture_K' must be > 0, current value '${params.admixture_K}'")
 
+if(params.xwas_alpha < 0)                   error("\nERROR in config: 'xwas_alpha' must be >= 0, current value '${params.xwas_alpha}'")
 
 // Initialising Channels based on params:
 plink_ch        = Channel.fromFilePairs(params.plink_fileset, size: 3)
@@ -123,8 +128,8 @@ workflow QC {
         CreateEigenvec(CreateOutputBaseQC.out.plink_QCed_pruned)
         PlotPCA(CreateOutputBaseQC.out.plink_QCed_pruned, CreateEigenvec.out.eigenvec)
 
-        RunAdmixture(CreateOutputBaseQC.out.plink_QCed_pruned)
-        PlotAdmixture(RunAdmixture.out.admixture_table)
+        // RunAdmixture(CreateOutputBaseQC.out.plink_QCed_pruned)
+        // PlotAdmixture(RunAdmixture.out.admixture_table)
 
     emit:
         plink_QCed          = CreateOutputBaseQC.out.plink_QCed
@@ -145,8 +150,17 @@ workflow SAIGE_GWAS {
     main:
         CreateOutputGWAS(autosomes_QCed, regions_ch)
         
-        SaigeFitNullModel(CreateOutputGWAS.out.plink_GWAS, sparse_GRM, sparse_ids, phenoFile_ch, "GWAS")
-        SaigeSingleAssoc(CreateOutputGWAS.out.plink_GWAS, sparse_GRM, sparse_ids, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr)
+        SaigeFitNullModel(CreateOutputGWAS.out.plink_GWAS, 
+                          sparse_GRM, 
+                          sparse_ids, 
+                          phenoFile_ch, 
+                          "GWAS")
+
+        SaigeSingleAssoc(CreateOutputGWAS.out.plink_GWAS, 
+                         sparse_GRM, 
+                         sparse_ids, 
+                         SaigeFitNullModel.out.gmmat, 
+                         SaigeFitNullModel.out.vr)
 
         ManhattanPlot(SaigeSingleAssoc.out.saige_sv)
         QQPlot(SaigeSingleAssoc.out.saige_sv, "p.value")
@@ -169,9 +183,20 @@ workflow SAIGE_RVAT {
     main:
         CreateOutputRVAT(autosomes_QCed, regions_ch)
 
-        SaigeFitNullModel(CreateOutputRVAT.out.plink_RVAT, sparse_GRM, sparse_ids, phenoFile_ch, "RVAT")
+        SaigeFitNullModel(CreateOutputRVAT.out.plink_RVAT, 
+                          sparse_GRM, 
+                          sparse_ids, 
+                          phenoFile_ch, 
+                          "RVAT")
+
         CreateGroupFile(CreateOutputRVAT.out.plink_RVAT, glist)
-        SaigeGeneAssoc(CreateOutputRVAT.out.plink_RVAT, sparse_GRM, sparse_ids, SaigeFitNullModel.out.gmmat, SaigeFitNullModel.out.vr, CreateGroupFile.out.group_file)
+
+        SaigeGeneAssoc(CreateOutputRVAT.out.plink_RVAT, 
+                       sparse_GRM, 
+                       sparse_ids, 
+                       SaigeFitNullModel.out.gmmat, 
+                       SaigeFitNullModel.out.vr, 
+                       CreateGroupFile.out.group_file)
 
         QQPlot(SaigeGeneAssoc.out.saige_gene, "Pvalue")
 
@@ -179,13 +204,27 @@ workflow SAIGE_RVAT {
         SaigeGeneAssoc.out.saige_gene
 }
 
-// workflow XWAS {
-//     take:
-//         plink_chrX
 
-//     main:
-        
-// }
+workflow XWAS {
+    take:
+        plink_chrX_basename
+        plink_chrX_bed
+        plink_chrX_bim
+        plink_chrX_fam
+
+    main:
+        n_var = plink_chrX_bim.countLines()
+
+        if(params.trait_type == "binary") {
+            ChrX_specific_QC(plink_chrX_basename, plink_chrX_bed, plink_chrX_bim, plink_chrX_fam, n_var)
+            chrX_ch = ChrX_specific_QC.out.plink_chrX_QCed
+        } else {
+            chrX_ch = plink_chrX
+        }
+
+        // ChrX_SV_Association(chrX_ch)
+}
+
 
 // Main workflow, calling all the other subworkflow:
 workflow {
@@ -193,16 +232,17 @@ workflow {
     // Perform base Quality Control on the genotype data:
     QC(plink_ch, remove_ch)
 
-    // Create the sparse GRM, split autosomes and chrX and create the phenotype Files
+    // Create the sparse GRM (for SAIGE):
     CreateSparseGRM(QC.out.plink_QCed_pruned)
 
+    // Split autosomes and chrX (chrX will be subjected to specific QC and association tests):
     Split_Autosomes_ChrX(QC.out.plink_QCed)
-
+    
+    // Run SAIGE+ (GWAS and RVAT) on the autosomes:
     CreatePhenoFile(Split_Autosomes_ChrX.out.autosomes,  // In practice: we only need the .fam file not the complete plink fileset
                     QC.out.eigenvec, 
                     covar_file_ch)
-    
-    // Run SAIGE+ (GWAS and RVAT) on the autosomes:
+
     SAIGE_GWAS(Split_Autosomes_ChrX.out.autosomes,
                CreateSparseGRM.out.sparseGRM,
                CreateSparseGRM.out.sampleIDs,
@@ -217,5 +257,8 @@ workflow {
                glist_ch)
 
     // Run XWAS (chrX-specific QC, GWAS and RVAT) on chrX:
-    
+    XWAS(Split_Autosomes_ChrX.out.chrX_basename,
+         Split_Autosomes_ChrX.out.chrX_bed,
+         Split_Autosomes_ChrX.out.chrX_bim,
+         Split_Autosomes_ChrX.out.chrX_fam)
 }

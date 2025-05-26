@@ -6,6 +6,9 @@ nextflow.enable.dsl = 2
 // into files ready for single-variants analyses and gene-based analyses.
 
 // Process that will split the SNPs belonging to the autosomes (1-22 + 25(PAR)) vs. chrX (23)
+
+// chrX files not in a tuple because we will need to extract the ".bim" file specifically and I could not
+// find any way to do this simply.
 process Split_Autosomes_ChrX {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "split/$it" }, mode: 'copy'
 
@@ -13,15 +16,20 @@ process Split_Autosomes_ChrX {
         tuple val(baseqced_basename), path(baseqced_files)
 
     output:
-        tuple val(autosomes_basename), path(autosomes_files), emit: autosomes, optional: true
-        tuple val(x_basename), path(x_files), emit: chrx, optional: true
+        tuple val(autosomes_basename), path(autosomes_files), optional: true, emit: autosomes
+        val(x_basename), emit: chrX_basename
+        path(x_bed), optional: true, emit: chrX_bed
+        path(x_bim), optional: true, emit: chrX_bim
+        path(x_fam), optional: true, emit: chrX_fam
 
     script:
         autosomes_basename = "${params.out_basename}_autosomes"
         autosomes_files    = "${params.out_basename}_autosomes.{bim,bed,fam}"
 
         x_basename = "${params.out_basename}_chrX"
-        x_files    = "${params.out_basename}_chrX.{bim,bed,fam}"
+        x_bed      = "${params.out_basename}_chrX.bed"
+        x_bim      = "${params.out_basename}_chrX.bim"
+        x_fam      = "${params.out_basename}_chrX.fam"
 
         """
         set -eo pipefail
