@@ -6,7 +6,7 @@ nextflow.enable.dsl = 2
 // XWAS will filter variants which have significantly =/= MAFs between males and females in controls:
 // 
 process ChrX_specific_QC {
-    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "XWAS/$it" }, mode: 'copy'
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "xwas/$it" }, mode: 'copy'
     
     input:
         val(plink_chrX_basename)
@@ -35,19 +35,35 @@ process ChrX_specific_QC {
         """
 }
 
-// process ChrX_SV_Association {
-//     input:
-//         tuple val(plink_chrX_QCed_basename), path(plink_chrX_QCed_files)
+process ChrX_SNVs_Assoc {
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "xwas/$it" }, mode: 'copy'
 
-//     output:
+    input:
+        tuple val(plink_chrX_QCed_basename), path(plink_chrX_QCed_files)
+        path(phenoFile)
 
+    output:
+        path(x_output), emit: xstrat_assoc
 
-//     script:
+    script:
+        if(params.trait_type == "binary") {
+            x_output = "xwas.xstrat.logistic"
+            cmd_beta = ""
+        } else {
+            x_output = "xwas.xstrat.linear"
+            cmd_beta = "--xbeta" // Transform Odd Ratios into betas in case of a quantitative traits
+        }
 
-//     """
-//     set -eo pipefail
-//         ${params.tools.xwas} --noweb --xwas \
-//             --strat-sex \
+        """
+        set -eo pipefail
 
-//     """
-// }
+        # --xchr-model 2 will code male genotypes as 0/2
+        # using --fishers method to combine p-values:
+
+        ${params.tools.xwas} --noweb --xwas \
+            --bfile ${plink_chrX_QCed_basename} \
+            --covar ${phenoFile} --covar-name ${params.saige_covar} ${params.saige_qcovar} \
+            --strat-sex --fishers \
+            ${cmd_beta} 
+        """
+}

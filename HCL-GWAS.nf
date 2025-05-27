@@ -27,6 +27,7 @@ include { CreateGroupFile }         from './modules/SAIGE.nf'
 include { SaigeGeneAssoc }          from './modules/SAIGE.nf'
 
 include { ChrX_specific_QC }        from './modules/XWAS.nf'
+include { ChrX_SNVs_Assoc }         from './modules/XWAS.nf'
 
 include { ManhattanPlot }           from './modules/Downstream.nf'
 include { QQPlot }                  from './modules/Downstream.nf'
@@ -151,18 +152,16 @@ workflow SAIGE_GWAS {
         CreateOutputGWAS(autosomes_QCed, regions_ch)
         
         SaigeFitNullModel(CreateOutputGWAS.out.plink_GWAS, 
-                          sparse_GRM, 
-                          sparse_ids, 
+                          sparse_GRM, sparse_ids, 
                           phenoFile_ch, 
                           "GWAS")
 
         SaigeSingleAssoc(CreateOutputGWAS.out.plink_GWAS, 
-                         sparse_GRM, 
-                         sparse_ids, 
+                         sparse_GRM, sparse_ids, 
                          SaigeFitNullModel.out.gmmat, 
                          SaigeFitNullModel.out.vr)
 
-        ManhattanPlot(SaigeSingleAssoc.out.saige_sv)
+        ManhattanPlot(SaigeSingleAssoc.out.saige_sv, "CHR", "POS", "MarkerID", "p.value")
         QQPlot(SaigeSingleAssoc.out.saige_sv, "p.value")
 
     emit:
@@ -184,16 +183,14 @@ workflow SAIGE_RVAT {
         CreateOutputRVAT(autosomes_QCed, regions_ch)
 
         SaigeFitNullModel(CreateOutputRVAT.out.plink_RVAT, 
-                          sparse_GRM, 
-                          sparse_ids, 
+                          sparse_GRM, sparse_ids, 
                           phenoFile_ch, 
                           "RVAT")
 
         CreateGroupFile(CreateOutputRVAT.out.plink_RVAT, glist)
 
         SaigeGeneAssoc(CreateOutputRVAT.out.plink_RVAT, 
-                       sparse_GRM, 
-                       sparse_ids, 
+                       sparse_GRM, sparse_ids, 
                        SaigeFitNullModel.out.gmmat, 
                        SaigeFitNullModel.out.vr, 
                        CreateGroupFile.out.group_file)
@@ -211,6 +208,7 @@ workflow XWAS {
         plink_chrX_bed
         plink_chrX_bim
         plink_chrX_fam
+        phenoFile_ch
 
     main:
         n_var = plink_chrX_bim.countLines()
@@ -222,7 +220,9 @@ workflow XWAS {
             chrX_ch = plink_chrX
         }
 
-        // ChrX_SV_Association(chrX_ch)
+        ChrX_SNVs_Assoc(chrX_ch, phenoFile_ch)
+
+        ManhattanPlot(ChrX_SNVs_Assoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_F")
 }
 
 
@@ -260,5 +260,6 @@ workflow {
     XWAS(Split_Autosomes_ChrX.out.chrX_basename,
          Split_Autosomes_ChrX.out.chrX_bed,
          Split_Autosomes_ChrX.out.chrX_bim,
-         Split_Autosomes_ChrX.out.chrX_fam)
+         Split_Autosomes_ChrX.out.chrX_fam,
+         CreatePhenoFile.out.phenoFile)
 }

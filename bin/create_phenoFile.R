@@ -78,4 +78,9 @@ if(opt$b) {
     phenoFile$PHENOTYPE[phenoFile$PHENOTYPE == 2] <- 1
 }
 
+# Adding FID to the start of the file ("FID" "IID") to correspond to the .covars format in plink:
+cols <- seq(1:ncol(phenoFile))
+FID_col <- which(colnames(phenoFile) == "FID")
+phenoFile <- phenoFile[,c(FID_col, cols[-FID_col])]
+
 write.table(x = phenoFile, file = "saige_phenofile.tsv", quote = F, sep = "\t", row.names = F)
