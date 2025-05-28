@@ -62,13 +62,14 @@ params.rvat_maf         = 0.01                 // Variants with a MAF > 'rvat_ma
 params.admixture_K      = 2                    // Number of expected populations in the dataset
 
 // SAIGE options:
-params.saige_covar      = "AGE,SEX,PC1,PC2"    // List of all covariates to include in the model, comma separated
-params.saige_qcovar     = "SEX"                // List the covariates which are categorical  
+params.saige_covar      = "PC1,PC2,PC3,PC4,PC5"                   // List of all covariates to include in the model, comma separated
+params.saige_qcovar     = ""                   // List the covariates which are categorical  
 params.saige_regions    = ""                   // (optional) list of regions to analyse (bed format)
 params.saige_extension  = 5                    // When assigning SNPs to genes, extends the gene bounds by this many kbp
 
 // XWAS options:
-params.alpha            = 0.05                 // Significance for the X-specific QC steps (bonferroni correction will be applied to this threshold)
+params.xwas_alpha       = 0.05                  // Significance for the X-specific QC steps (bonferroni correction will be applied to this threshold)
+params.xwas_covar       = "PC1,PC2,PC3,PC4,PC5" // Covariates for the chrX analysis with XWAS
 
 // Checking input values:
 if(params.plink_fileset == "")              error("\nERROR in config: 'plink_fileset' is required")
@@ -223,6 +224,7 @@ workflow XWAS {
         ChrX_SNVs_Assoc(chrX_ch, phenoFile_ch)
 
         ManhattanPlot(ChrX_SNVs_Assoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_F")
+        QQPlot(ChrX_SNVs_Assoc.out.xstrat_assoc, "P_F")
 }
 
 

@@ -38,7 +38,7 @@ opt <- parse_args(OptionParser(option_list = option_list))
 # Reading the .het file
 if(file.exists(opt$i)) {
     if(opt$v) print(paste0("Reading the .tsv file", opt$i))
-    saige <- read.table(opt$i, header = T, sep = "\t")
+    saige <- read.table(opt$i, header = T)
 } else { stop(paste0("File '", opt$i, "' does not exist.")) }
 
 if(opt$p %in% colnames(saige)) {

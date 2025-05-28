@@ -23,7 +23,7 @@ process ChrX_specific_QC {
         plink_chrX_QCed_basename = "${params.out_basename}_chrX_QCed"
         plink_chrX_QCed_files    = "${params.out_basename}_chrX_QCed.{bim,bed,fam}"
 
-        bonfx = 0.05 / n_vars
+        bonfx = params.xwas_alpha / n_vars
 
         """
         set -eo pipefail
@@ -62,7 +62,7 @@ process ChrX_SNVs_Assoc {
 
         ${params.tools.xwas} --noweb --xwas \
             --bfile ${plink_chrX_QCed_basename} \
-            --covar ${phenoFile} --covar-name ${params.saige_covar} ${params.saige_qcovar} \
+            --covar ${phenoFile} --covar-name ${params.xwas_covar} \
             --strat-sex --fishers --xchr-model 2 \
             ${cmd_beta} 
         """
