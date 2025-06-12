@@ -127,8 +127,8 @@ workflow QC {
         
         HWEFlag(CreateOutputBaseQC.out.plink_QCed, params.qc_hwe)
 
-        CreateEigenvec(CreateOutputBaseQC.out.plink_QCed_pruned)
-        PlotPCA(CreateOutputBaseQC.out.plink_QCed_pruned, CreateEigenvec.out.eigenvec)
+        CreateEigenvec(CreateOutputBaseQC.out.plink_QCed)
+        PlotPCA(CreateOutputBaseQC.out.plink_QCed, CreateEigenvec.out.eigenvec)
 
         // RunAdmixture(CreateOutputBaseQC.out.plink_QCed_pruned)
         // PlotAdmixture(RunAdmixture.out.admixture_table)
@@ -144,8 +144,6 @@ workflow QC {
 workflow SAIGE_GWAS {
     take:
         autosomes_QCed
-        sparse_GRM
-        sparse_ids
         phenoFile_ch
         regions_ch
 
@@ -153,12 +151,10 @@ workflow SAIGE_GWAS {
         CreateOutputGWAS(autosomes_QCed, regions_ch)
         
         SaigeFitNullModel(CreateOutputGWAS.out.plink_GWAS, 
-                          sparse_GRM, sparse_ids, 
                           phenoFile_ch, 
                           "GWAS")
 
         SaigeSingleAssoc(CreateOutputGWAS.out.plink_GWAS, 
-                         sparse_GRM, sparse_ids, 
                          SaigeFitNullModel.out.gmmat, 
                          SaigeFitNullModel.out.vr)
 
@@ -174,8 +170,6 @@ workflow SAIGE_GWAS {
 workflow SAIGE_RVAT {
     take:
         autosomes_QCed
-        sparse_GRM
-        sparse_ids
         phenoFile_ch
         regions_ch
         glist
@@ -184,14 +178,12 @@ workflow SAIGE_RVAT {
         CreateOutputRVAT(autosomes_QCed, regions_ch)
 
         SaigeFitNullModel(CreateOutputRVAT.out.plink_RVAT, 
-                          sparse_GRM, sparse_ids, 
                           phenoFile_ch, 
                           "RVAT")
 
         CreateGroupFile(CreateOutputRVAT.out.plink_RVAT, glist)
 
         SaigeGeneAssoc(CreateOutputRVAT.out.plink_RVAT, 
-                       sparse_GRM, sparse_ids, 
                        SaigeFitNullModel.out.gmmat, 
                        SaigeFitNullModel.out.vr, 
                        CreateGroupFile.out.group_file)
@@ -223,8 +215,8 @@ workflow XWAS {
 
         ChrX_SNVs_Assoc(chrX_ch, phenoFile_ch)
 
-        ManhattanPlot(ChrX_SNVs_Assoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_F")
-        QQPlot(ChrX_SNVs_Assoc.out.xstrat_assoc, "P_F")
+        ManhattanPlot(ChrX_SNVs_Assoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_comb_Fisher")
+        QQPlot(ChrX_SNVs_Assoc.out.xstrat_assoc, "P_comb_Fisher")
 }
 
 
@@ -246,14 +238,10 @@ workflow {
                     covar_file_ch)
 
     SAIGE_GWAS(Split_Autosomes_ChrX.out.autosomes,
-               CreateSparseGRM.out.sparseGRM,
-               CreateSparseGRM.out.sampleIDs,
                CreatePhenoFile.out.phenoFile, 
                regions_ch)
 
     SAIGE_RVAT(Split_Autosomes_ChrX.out.autosomes,
-               CreateSparseGRM.out.sparseGRM,
-               CreateSparseGRM.out.sampleIDs,
                CreatePhenoFile.out.phenoFile,
                regions_ch,
                glist_ch)

@@ -68,8 +68,6 @@ process SaigeFitNullModel {
 
     input:
         tuple val(plink_basename), path(plink_files)
-        path(sparse_GRM)
-        path(sparse_ids)
         path(phenofile)
         val(step)  // should be "GWAS" or "RVAT" will determine if 'isCateVarianceRatio' is TRUE or FALSE
 
@@ -93,9 +91,6 @@ process SaigeFitNullModel {
 
         ${params.tools.Rscript} ${params.tools.saige_folder}/step1_fitNULLGLMM.R \
             --plinkFile ${plink_basename} \
-            --useSparseGRMtoFitNULL=TRUE \
-            --sparseGRMFile ${sparse_GRM} \
-            --sparseGRMSampleIDFile ${sparse_ids} \
             --phenoFile ${phenofile} \
             --phenoCol=PHENOTYPE \
             --covarColList=${params.saige_covar} \
@@ -111,14 +106,13 @@ process SaigeFitNullModel {
         """
 }
 
+
 // Perform the Single Variant Association Test (= GWAS) using SAIGE+
 process SaigeSingleAssoc {
     publishDir "${params.outdir}/saige/", mode: 'copy'
 
     input:
         tuple val(plink_basename), path(plink_files)
-        path(sparse_GRM)
-        path(sparse_ids)
         path(gmmat_file)
         path(vr_file)
     
@@ -141,8 +135,6 @@ process SaigeSingleAssoc {
             --bedFile=${plink_basename}.bed \
             --bimFile=${plink_basename}.bim \
             --famFile=${plink_basename}.fam \
-            --sparseGRMFile ${sparse_GRM} \
-            --sparseGRMSampleIDFile ${sparse_ids} \
             --GMMATmodelFile=${gmmat_file} \
             --varianceRatioFile=${vr_file} \
             --is_Firth_beta=TRUE --pCutoffforFirth=0.05 \
@@ -151,6 +143,7 @@ process SaigeSingleAssoc {
             --SAIGEOutputFile=${saige_sv}
         """
 }
+
 
 // Creates the Group File for the Rare Variant Association Test with SAIGE+
 // This contains the list of genes (or regions) to consider, with their associated variants.
@@ -189,8 +182,6 @@ process SaigeGeneAssoc {
 
     input:
         tuple val(plink_basename), path(plink_files)
-        path(sparse_GRM)
-        path(sparse_ids)
         path(gmmat_file)
         path(vr_file)
         path(groupFile)
@@ -208,8 +199,6 @@ process SaigeGeneAssoc {
             --bedFile=${plink_basename}.bed \
             --bimFile=${plink_basename}.bim \
             --famFile=${plink_basename}.fam \
-            --sparseGRMFile ${sparse_GRM} \
-            --sparseGRMSampleIDFile ${sparse_ids} \
             --GMMATmodelFile=${gmmat_file} \
             --varianceRatioFile=${vr_file} \
             --LOCO=FALSE \
