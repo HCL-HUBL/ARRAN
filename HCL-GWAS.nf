@@ -31,6 +31,7 @@ include { ChrX_SNVs_Assoc }         from './modules/XWAS.nf'
 
 include { ManhattanPlot }           from './modules/Downstream.nf'
 include { QQPlot }                  from './modules/Downstream.nf'
+include { SummaryStatistics }       from './modules/Downstream.nf'
 
 // Initialising the options with default values:
 // General options:
@@ -157,6 +158,7 @@ workflow SAIGE_GWAS {
 
         ManhattanPlot(SaigeSingleAssoc.out.saige_sv, "CHR", "POS", "MarkerID", "p.value")
         QQPlot(SaigeSingleAssoc.out.saige_sv, "p.value")
+        SummaryStatistics(SaigeSingleAssoc.out.saige_sv, "SAIGE")
 
     emit:
         SaigeSingleAssoc.out.saige_sv
