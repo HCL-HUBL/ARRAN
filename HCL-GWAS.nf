@@ -32,14 +32,13 @@ include { ChrX_SNVs_Assoc }         from './modules/XWAS.nf'
 include { ManhattanPlot }           from './modules/Downstream.nf'
 include { QQPlot }                  from './modules/Downstream.nf'
 
-
 // Initialising the options with default values:
 // General options:
-params.plink_fileset    = ""                   // The path to the plink fileset (/path/to/example.{bim,bed,fam})
-params.covar_file       = ""
-params.outdir           = "${launchDir}"       // The output directory where the outputs will be stored
+params.plink_fileset    = ""
+params.covar_file       = ""                   // Path to file listing the covariates to be included in the model
 params.out_basename     = "hcl_gwas"           // Basename of the output files
-params.genome_build     = "hg19"               // Accepts 'hg19' or 'hg38', used to define PAR regions
+params.outdir           = "${launchDir}"       // Path to the output folder
+params.genome_build     = "hg19"               // Accepts 'hg19' or 'hg38': used to define the genes list and PAR regions to use
 params.trait_type       = "binary"             // Trait type, must be 'binary' or 'quantitative'
 
 // QC options:
@@ -47,29 +46,28 @@ params.qc_mind          = 0.05                 // Individuals with >5% missing g
 params.qc_geno          = 0.05                 // Variants with >5% missing genotypes will be removed
 params.qc_remove        = ""                   // (optional) File listing IIDs and FIDs of individuals to be excluded
 params.qc_hetfilter     = "both"               // Heterozygosity filter, must be "none", "low", "high" or "both", cf: ./bin/het_check.R
-params.qc_hwe           = 5e-6
+params.qc_hwe           = 5e-6                 // Variants with a HWE exact test p-value < 'qc_hwe' will be flagged (added to a file for further inspection) 
 
 // Pruning options:
 params.pr_window        = 200                  // Window size for the pruning, in number of variants
 params.pr_step          = 50                   // Window sliding size in number of variants
 params.pr_r2            = 0.25                 // Pairs of variants with r2 > pr_r2 will be removed
 
-// MAF options:
-params.gwas_maf         = 0.01                 // Variants with a MAF < 'gwas_maf' will be removed for the GWAS analysis
-params.rvat_maf         = 0.01                 // Variants with a MAF > 'rvat_maf' will be removed for the RVAT analysis
-
-// Admixture:
-params.admixture_K      = 2                    // Number of expected populations in the dataset
-
-// SAIGE options:
-params.saige_covar      = "PC1,PC2,PC3,PC4,PC5"                   // List of all covariates to include in the model, comma separated
-params.saige_qcovar     = ""                   // List the covariates which are categorical  
-params.saige_regions    = ""                   // (optional) list of regions to analyse (bed format)
-params.saige_extension  = 5                    // When assigning SNPs to genes, extends the gene bounds by this many kbp
-
-// XWAS options:
+// GWAS + XWAS options:
+params.run_GWAS         = true                  // Boolean indicating wether to run the GWAS analysis
+params.gwas_maf         = 0.01                  // Variants with a MAF < 'gwas_maf' will be removed for the GWAS analysis
 params.xwas_alpha       = 0.05                  // Significance for the X-specific QC steps (bonferroni correction will be applied to this threshold)
 params.xwas_covar       = "PC1,PC2,PC3,PC4,PC5" // Covariates for the chrX analysis with XWAS
+
+// RVAT options:
+params.run_RVAT         = true                  // Boolean indicating wether to run the Rare Variants analysis
+params.saige_covar      = "PC1,PC2,PC3,PC4,PC5" // List of all covariates to include in the model, comma separated
+params.saige_qcovar     = ""                    // List the covariates which are categorical  
+params.saige_regions    = ""                    // (optional) list of regions to analyse (bed format)
+params.saige_extension  = 5                     // When assigning SNPs to genes, extends the gene bounds by this many kbp
+
+// Admixture:
+params.admixture_K      = 2                     // Number of expected populations in the dataset
 
 // Checking input values:
 if(params.plink_fileset == "")              error("\nERROR in config: 'plink_fileset' is required")
@@ -96,7 +94,6 @@ if(params.pr_step < 1)                      error("\nERROR in config: 'pr_step' 
 if(params.pr_r2 < 0 || params.pr_r2 > 1)    error("\nERROR in config: 'pr_r2' must be between 0 and 1, current value '${params.pr_r2}'")
 
 if(params.gwas_maf < 0)                     error("\nERROR in config: 'gwas_maf' must be >= 0, current value '${params.gwas_maf}'")
-if(params.rvat_maf < 0)                     error("\nERROR in config: 'rvat_maf' must be <= 0, current value '${params.rvat_maf}'")
 
 if(params.admixture_K <= 0)                 error("\nERROR in config: 'admixture_K' must be > 0, current value '${params.admixture_K}'")
 
@@ -237,19 +234,23 @@ workflow {
                     QC.out.eigenvec, 
                     covar_file_ch)
 
-    SAIGE_GWAS(Split_Autosomes_ChrX.out.autosomes,
-               CreatePhenoFile.out.phenoFile, 
-               regions_ch)
+    if(params.run_GWAS) {
+        SAIGE_GWAS(Split_Autosomes_ChrX.out.autosomes,
+                   CreatePhenoFile.out.phenoFile, 
+                   regions_ch)
+        
+        // Run XWAS (chrX-specific QC & GWAS) on chrX:
+        XWAS(Split_Autosomes_ChrX.out.chrX_basename,
+             Split_Autosomes_ChrX.out.chrX_bed,
+             Split_Autosomes_ChrX.out.chrX_bim,
+             Split_Autosomes_ChrX.out.chrX_fam,
+             CreatePhenoFile.out.phenoFile)
+    }
 
-    SAIGE_RVAT(Split_Autosomes_ChrX.out.autosomes,
-               CreatePhenoFile.out.phenoFile,
-               regions_ch,
-               glist_ch)
-
-    // Run XWAS (chrX-specific QC, GWAS and RVAT) on chrX:
-    XWAS(Split_Autosomes_ChrX.out.chrX_basename,
-         Split_Autosomes_ChrX.out.chrX_bed,
-         Split_Autosomes_ChrX.out.chrX_bim,
-         Split_Autosomes_ChrX.out.chrX_fam,
-         CreatePhenoFile.out.phenoFile)
+    if(params.run_RVAT) {
+        SAIGE_RVAT(Split_Autosomes_ChrX.out.autosomes,
+                   CreatePhenoFile.out.phenoFile,
+                   regions_ch,
+                   glist_ch)
+    }
 }
