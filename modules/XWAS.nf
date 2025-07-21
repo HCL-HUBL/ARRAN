@@ -63,7 +63,7 @@ process ChrX_SNVs_Assoc {
         ${params.tools.xwas} --noweb --xwas \
             --bfile ${plink_chrX_QCed_basename} \
             --covar ${phenoFile} --covar-name ${params.xwas_covar} \
-            --strat-sex --fishers --xchr-model 2 \
+            --strat-sex --fishers --xchr-model 2 --ci 0.95 \
             ${cmd_beta} 
         """
 }
