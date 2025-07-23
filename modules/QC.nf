@@ -273,6 +273,8 @@ process CreateEigenvec {
 
 // Process used to flag problematic variants in term of HWE
 process HWEFlag {
+    errorStrategy 'ignore'
+
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
 
     input:
@@ -280,7 +282,7 @@ process HWEFlag {
         val(qc_hwe)
 
     output:
-        path(hwelist)
+        path(hwelist), optional: true
         path("HWEFlag.log")
     
     script:
