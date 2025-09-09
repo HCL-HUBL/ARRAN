@@ -4,7 +4,6 @@ nextflow.enable.dsl = 2
 
 // chrX-specific QC (only on controls, so only for binary traits):
 // XWAS will filter variants which have significantly =/= MAFs between males and females in controls:
-// 
 process ChrX_specific_QC {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "xwas/$it" }, mode: 'copy'
     
@@ -44,6 +43,7 @@ process ChrX_SNVs_Assoc {
 
     output:
         path(x_output), emit: xstrat_assoc
+        path("xwas.log")
 
     script:
         if(params.trait_type == "binary") {
@@ -59,7 +59,6 @@ process ChrX_SNVs_Assoc {
 
         # --xchr-model 2 will code male genotypes as 0/2
         # using --fishers method to combine p-values:
-
         ${params.tools.xwas} --noweb --xwas \
             --bfile ${plink_chrX_QCed_basename} \
             --covar ${phenoFile} --covar-name ${params.xwas_covar} \

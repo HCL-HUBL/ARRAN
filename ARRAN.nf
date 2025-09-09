@@ -222,7 +222,6 @@ workflow XWAS {
 
 // Main workflow, calling all the other subworkflow:
 workflow {
-
     // Perform base Quality Control on the genotype data:
     QC(plink_ch, remove_ch)
 

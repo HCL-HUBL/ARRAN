@@ -2,7 +2,7 @@
 
 ## Introduction
 
-ARRAN (Automatic and Reproductible Rare variants and gwas Analyses in Nextflow) is a Nextflow pipeline designed to perform Genome Wide Association Studies (GWAS) and Rare Variants Association Tests (RVAT). This ReadMe contains step-by-step instructions to configure and run the pipeline.
+ARRAN (Automatic and Reproducible Rare variants and gwas Analyses in Nextflow) is a Nextflow pipeline designed to perform Genome Wide Association Studies (GWAS) and Rare Variants Association Tests (RVAT). This ReadMe contains step-by-step instructions to configure and run the pipeline.
 
 This pipeline uses Plink to perform QC steps and SAIGE/XWAS to perform the association tests. It includes:
  
