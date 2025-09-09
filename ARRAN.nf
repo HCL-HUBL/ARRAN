@@ -55,13 +55,14 @@ params.pr_step          = 50                   // Window sliding size in number 
 params.pr_r2            = 0.25                 // Pairs of variants with r2 > pr_r2 will be removed
 
 // GWAS + XWAS options:
-params.run_GWAS         = true                  // Boolean indicating wether to run the GWAS analysis
+params.run_GWAS         = true                  // Boolean indicating whether to run the GWAS analysis or not
+params.run_XWAS         = true                  // Boolean indicating whether to run the XWAS analysis or not
 params.gwas_maf         = 0.01                  // Variants with a MAF < 'gwas_maf' will be removed for the GWAS analysis
 params.xwas_alpha       = 0.05                  // Significance for the X-specific QC steps (bonferroni correction will be applied to this threshold)
 params.xwas_covar       = "PC1,PC2,PC3,PC4,PC5" // Covariates for the chrX analysis with XWAS
 
 // RVAT options:
-params.run_RVAT         = true                  // Boolean indicating wether to run the Rare Variants analysis
+params.run_RVAT         = true                  // Boolean indicating whether to run the Rare Variants analysis or not
 params.saige_covar      = "PC1,PC2,PC3,PC4,PC5" // List of all covariates to include in the model, comma separated
 params.saige_qcovar     = ""                    // List the covariates which are categorical  
 params.saige_regions    = ""                    // (optional) list of regions to analyse (bed format)
@@ -240,7 +241,9 @@ workflow {
         SAIGE_GWAS(Split_Autosomes_ChrX.out.autosomes,
                    CreatePhenoFile.out.phenoFile, 
                    regions_ch)
-        
+    }
+
+    if(params.run_XWAS) {
         // Run XWAS (chrX-specific QC & GWAS) on chrX:
         XWAS(Split_Autosomes_ChrX.out.chrX_basename,
              Split_Autosomes_ChrX.out.chrX_bed,
