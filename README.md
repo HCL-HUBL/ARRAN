@@ -1,8 +1,8 @@
-# HCL-GWAS
+# ARRAN
 
 ## Introduction
 
-This Nextflow pipeline is designed to perform Genome Wide Association Studies (GWAS) and Rare Variants Association Tests (RVAT). This ReadMe contains step-by-step instructions to configure and run the pipeline.
+ARRAN (Automatic and Reproductible Rare variants and gwas Analyses in Nextflow) is a Nextflow pipeline designed to perform Genome Wide Association Studies (GWAS) and Rare Variants Association Tests (RVAT). This ReadMe contains step-by-step instructions to configure and run the pipeline.
 
 This pipeline uses Plink to perform QC steps and SAIGE/XWAS to perform the association tests. It includes:
  
@@ -56,18 +56,18 @@ apptainer build HCL-GWAS.sif HCL-GWAS.def
 A test dataset is available in "./test_dataset/" and can be run with:
 
 ```shell
-cd /path/to/HCL-GWAS/
+cd /path/to/ARRAN/
 
 apptainer build HCL-GWAS_20250224-152241.simg HCL-GWAS.def
 
 cd ./test_dataset/
 
-nextflow run ../HCL-GWAS.nf -c HCL-GWAS_test.conf
+nextflow run ../arran.nf -c arran_test.conf
 ```
 
 ## The Pipeline
 
-The pipeline can be launched from [HCL-GWAS.nf](./HCL-GWAS.nf).
+The pipeline can be launched from [arran.nf](./arran.nf).
 
 You will need to change values in the configuration file [default.conf](./confs/default.conf) to adjust the QC and association steps to fit your own study.
 
@@ -214,7 +214,7 @@ This pipeline will output the following:
 
 Individuals with extreme heterozygosity levels are usually removed from GWAS analyses, to avoid biases due to consanguinity (low het. levels) and library preparation (high het. levels.). 
 
-In HCL-GWAS, samples outside 3 standard deviations for the cohort's mean can be removed from the analysis, depending on the value set for *qc_hetfilter*:
+In ARRAN, samples outside 3 standard deviations for the cohort's mean can be removed from the analysis, depending on the value set for *qc_hetfilter*:
 
 ```
     - 'none': do not apply the heterozygosity filter.
@@ -227,19 +227,19 @@ In HCL-GWAS, samples outside 3 standard deviations for the cohort's mean can be 
 
 *Note*: if you have admixed samples in your cohort, they will have a very low F coefficient and you should consider wether or not to remove them from the analysis, as the high heterozygosity is then expected and is not reflective of a low quality library.
 
-This plots shows the distribution of the F coefficient in the cohort. The F coefficient reports the observed and expected autosomal homozygous genotype counts for each sample. A low F value corresponds to a high heterozygosity and a high F value corresponds to a low heterozygosity and there are plotted in red and blue respectively in the plot. In HCL-GWAS.nf you can choose to remove 'none' samples, or those with 'low' heterozygosity, 'high' heterozygosity or 'both' (see [heterozygosity filter](#heterozygosity-filter)).
+This plots shows the distribution of the F coefficient in the cohort. The F coefficient reports the observed and expected autosomal homozygous genotype counts for each sample. A low F value corresponds to a high heterozygosity and a high F value corresponds to a low heterozygosity and there are plotted in red and blue respectively in the plot. In arran.nf you can choose to remove 'none' samples, or those with 'low' heterozygosity, 'high' heterozygosity or 'both' (see [heterozygosity filter](#heterozygosity-filter)).
 
 ![het_plot](./images/heterozygosity_plot.png "Heterozygosity plot representing the distribution of the F coeff in a cohort.")
 
 #### Principal Component Analysis
 
-HCL-GWAS plots the PCA obtained with the [*--pca* option](https://www.cog-genomics.org/plink/1.9/strat#pca) from plink. The PCA is built from the variance-standardized relationship matrix (GRM) and the components are written to a *.eigenvec* file.
+ARRAN plots the PCA obtained with the [*--pca* option](https://www.cog-genomics.org/plink/1.9/strat#pca) from plink. The PCA is built from the variance-standardized relationship matrix (GRM) and the components are written to a *.eigenvec* file.
 
 This plot can help you to find patterns in the genetic relationship between individuals in your cohort, notably regarding ancestry. The principal components are usually given as covariates to the GWAS to account for ancestry in the association models.
 
 ![PCA_plot](./images/pca_plot.png)
 
-HCL-GWAS outputs two PCA plots: one colored with the phenotype the other with sex.
+ARRAN outputs two PCA plots: one colored with the phenotype the other with sex.
 
 #### QQplot
 
