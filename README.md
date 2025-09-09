@@ -62,12 +62,12 @@ apptainer build HCL-GWAS_20250224-152241.simg HCL-GWAS.def
 
 cd ./test_dataset/
 
-nextflow run ../arran.nf -c arran_test.conf
+nextflow run ../ARRAN.nf -c arran_test.conf
 ```
 
 ## The Pipeline
 
-The pipeline can be launched from [arran.nf](./arran.nf).
+The pipeline can be launched from [ARRAN.nf](./ARRAN.nf).
 
 You will need to change values in the configuration file [default.conf](./confs/default.conf) to adjust the QC and association steps to fit your own study.
 
@@ -121,7 +121,7 @@ General options:
 | ----------- | ----------- | ----------- |
 | plink\_fileset | Path to the plink fileset (.bim, .bed, .fam). Format: '/path/to/example.{bed,bim,fam}' | "" |
 | covar\_file | Path to file listing the covariates to be included in the model | "" |
-| out\_basename | Basename of the output files | "hcl_gwas" |
+| out\_basename | Basename of the output files | "arran_" |
 | outdir | Path to the output folder | ${launchDir} |
 | genome\_build | The genome build (must be "hg19" or "hg38") | "hg19" |
 | trait\_type | The type of the trait under study ("binary" or "quantitative") | "binary" |
@@ -227,7 +227,7 @@ In ARRAN, samples outside 3 standard deviations for the cohort's mean can be rem
 
 *Note*: if you have admixed samples in your cohort, they will have a very low F coefficient and you should consider wether or not to remove them from the analysis, as the high heterozygosity is then expected and is not reflective of a low quality library.
 
-This plots shows the distribution of the F coefficient in the cohort. The F coefficient reports the observed and expected autosomal homozygous genotype counts for each sample. A low F value corresponds to a high heterozygosity and a high F value corresponds to a low heterozygosity and there are plotted in red and blue respectively in the plot. In arran.nf you can choose to remove 'none' samples, or those with 'low' heterozygosity, 'high' heterozygosity or 'both' (see [heterozygosity filter](#heterozygosity-filter)).
+This plots shows the distribution of the F coefficient in the cohort. The F coefficient reports the observed and expected autosomal homozygous genotype counts for each sample. A low F value corresponds to a high heterozygosity and a high F value corresponds to a low heterozygosity and there are plotted in red and blue respectively in the plot. In ARRAN.nf you can choose to remove 'none' samples, or those with 'low' heterozygosity, 'high' heterozygosity or 'both' (see [heterozygosity filter](#heterozygosity-filter)).
 
 ![het_plot](./images/heterozygosity_plot.png "Heterozygosity plot representing the distribution of the F coeff in a cohort.")
 

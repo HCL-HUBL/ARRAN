@@ -37,7 +37,7 @@ include { SummaryStatistics }       from './modules/Downstream.nf'
 // General options:
 params.plink_fileset    = ""
 params.covar_file       = ""                   // Path to file listing the covariates to be included in the model
-params.out_basename     = "hcl_gwas"           // Basename of the output files
+params.out_basename     = "arran_"             // Basename of the output files
 params.outdir           = "${launchDir}"       // Path to the output folder
 params.genome_build     = "hg19"               // Accepts 'hg19' or 'hg38': used to define the genes list and PAR regions to use
 params.trait_type       = "binary"             // Trait type, must be 'binary' or 'quantitative'
