@@ -1,0 +1,39 @@
+nextflow_process {
+
+    name "Test Process BaseQC"
+    script "modules/QC.nf"
+    process "BaseQC"
+
+    test("Should create files with basic QC") {
+        
+        setup {
+            run("GenotypesPreprocessing") {
+                script "modules/QC.nf"
+                process {
+                    """
+                    input[0] = Channel.fromFilePairs("${projectDir}/test_dataset/arran.{bed,bim,fam}", size: 3)
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = GenotypesPreprocessing.out
+                input[1] = []
+                """
+            }
+        }
+
+        then {
+            assert process.success
+
+            assert process.out.plink_baseQC.get(0).get(1).size() == 3 // Verification de la création de 3 fichiers (bim, bed et fam)
+
+            assert path(process.out.plink_baseQC.get(0).get(1).get(0)).md5 == "cce9b2f73639780073d939b091dea1a3" // .bed
+            assert path(process.out.plink_baseQC.get(0).get(1).get(1)).md5 == "eef29ed0bb4c3616eeef6ff80a729ea0" // .bim
+            assert path(process.out.plink_baseQC.get(0).get(1).get(2)).md5 == "394e164862e354a3a8a2fe51ea3e2380" // .fam
+        }
+    }
+}
