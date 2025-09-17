@@ -1,0 +1,27 @@
+nextflow_process {
+
+    name "Test Process GenotypesPreprocessing"
+    script "modules/QC.nf"
+    process "GenotypesPreprocessing"
+
+    test("Should create preprocessed plink files") {
+
+        when {
+            process {
+                """
+                input[0] = Channel.fromFilePairs("${projectDir}/test_dataset/arran.{bed,bim,fam}", size: 3)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+
+            assert process.out.plink_preprocessed.get(0).get(1).size() == 3 // Verification de la création de 3 fichiers (bim, bed et fam)
+
+            assert path(process.out.plink_preprocessed.get(0).get(1).get(0)).md5 == "b3404135f7396057eafcabd5d32d8c38" // .bed
+            assert path(process.out.plink_preprocessed.get(0).get(1).get(1)).md5 == "f6c68359a10cb99ce0b77dc0cca9e5e0" // .bim
+            assert path(process.out.plink_preprocessed.get(0).get(1).get(2)).md5 == "3c1278759c1692bbddd73c8fa9fa2c1c" // .fam
+        }
+    }
+}
