@@ -2,9 +2,8 @@
 
 nextflow.enable.dsl = 2
 
-// This process will split the PAR regions into an separate chr if it does not exists
-// NON-PAR genotypes on chrX for males will be doubled
 // Unknown variant IDs "." will be transformed to "chr_pos_ref_alt"
+// This process will split the PAR regions into an separate chr if it does not exists
 process GenotypesPreprocessing {
     input:
         tuple val(plink_basename), path(plink_files)
