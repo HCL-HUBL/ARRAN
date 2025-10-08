@@ -22,8 +22,8 @@ option_list <- list(
 
     make_option(c("-o", "--output"),
                 type = "character",
-                default = "Manhattan",
-                help = "Name of the output pdf file.",
+                default = "QQplot.png",
+                help = "Name of the output png file.",
                 metavar = "<OUTPUT_NAME>"),
 
     make_option(c("-v", "--verbose"),
