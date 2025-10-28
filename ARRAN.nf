@@ -225,8 +225,10 @@ workflow {
     // Perform base Quality Control on the genotype data:
     QC(plink_ch, remove_ch)
 
-    // Create the sparse GRM (for SAIGE):
-    CreateSparseGRM(QC.out.plink_QCed_pruned)
+    if(params.makeGRM) {
+        // Create the sparse GRM (for SAIGE):
+        CreateSparseGRM(QC.out.plink_QCed_pruned)
+    }
 
     // Split autosomes and chrX (chrX will be subjected to specific QC and association tests):
     Split_Autosomes_ChrX(QC.out.plink_QCed)
