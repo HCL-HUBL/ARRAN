@@ -45,6 +45,8 @@ if(opt$p %in% colnames(saige)) {
     pcolname <- opt$p
 } else { stop(paste0("Column '", pcolname, "' not found in the .tsv file."))}
 
-png(opt$o, height = 14, width = 14, res = 300, unit = "cm")
-    qqman::qq(saige[,pcolname])
-dev.off()
+if(!all(is.na(saige[,pcolname]))) {
+    png(opt$o, height = 14, width = 14, res = 300, unit = "cm")
+        qqman::qq(saige[,pcolname])
+    dev.off()
+}

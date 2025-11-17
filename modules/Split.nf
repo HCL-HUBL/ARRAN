@@ -9,7 +9,7 @@ nextflow.enable.dsl = 2
 
 // chrX files not in a tuple because we will need to extract the ".bim" file specifically and I could not
 // find any way to do this simply.
-process Split_Autosomes_ChrX {
+process SplitAutosomesChrX {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "split/$it" }, mode: 'copy'
 
     input:

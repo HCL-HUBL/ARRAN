@@ -15,7 +15,7 @@ include { CreateOutputBaseQC }      from './modules/QC.nf'
 include { RunAdmixture }            from './modules/QC.nf'
 include { PlotAdmixture }           from './modules/QC.nf'
 
-include { Split_Autosomes_ChrX }    from './modules/Split.nf'
+include { SplitAutosomesChrX }      from './modules/Split.nf'
 include { CreateOutputGWAS }        from './modules/Split.nf'
 include { CreateOutputRVAT }        from './modules/Split.nf'
 
@@ -30,7 +30,13 @@ include { ChrX_specific_QC }        from './modules/XWAS.nf'
 include { ChrX_SNVs_Assoc }         from './modules/XWAS.nf'
 
 include { ManhattanPlot }           from './modules/Downstream.nf'
+include { ManhattanPlot as ManhattanPlot_comb }      from './modules/Downstream.nf'
+include { ManhattanPlot as ManhattanPlot_M }         from './modules/Downstream.nf'
+include { ManhattanPlot as ManhattanPlot_F }         from './modules/Downstream.nf'
 include { QQPlot }                  from './modules/Downstream.nf'
+include { QQPlot as QQPlot_comb }   from './modules/Downstream.nf'
+include { QQPlot as QQPlot_M }      from './modules/Downstream.nf'
+include { QQPlot as QQPlot_F }      from './modules/Downstream.nf'
 include { SummaryStatistics }       from './modules/Downstream.nf'
 
 // Initialising the options with default values:
@@ -53,6 +59,8 @@ params.qc_hwe           = 5e-6                 // Variants with a HWE exact test
 params.pr_window        = 200                  // Window size for the pruning, in number of variants
 params.pr_step          = 50                   // Window sliding size in number of variants
 params.pr_r2            = 0.25                 // Pairs of variants with r2 > pr_r2 will be removed
+
+params.makeGRM          = false
 
 // GWAS + XWAS options:
 params.run_GWAS         = true                  // Boolean indicating whether to run the GWAS analysis or not
@@ -215,8 +223,13 @@ workflow XWAS {
 
         ChrX_SNVs_Assoc(chrX_ch, phenoFile_ch)
 
-        ManhattanPlot(ChrX_SNVs_Assoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_comb_Fisher")
-        QQPlot(ChrX_SNVs_Assoc.out.xstrat_assoc, "P_comb_Fisher")
+        ManhattanPlot_comb(ChrX_SNVs_Assoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_comb_Fisher")
+        ManhattanPlot_M(ChrX_SNVs_Assoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_M")
+        ManhattanPlot_F(ChrX_SNVs_Assoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_F")
+
+        QQPlot_comb(ChrX_SNVs_Assoc.out.xstrat_assoc, "P_comb_Fisher")
+        QQPlot_M(ChrX_SNVs_Assoc.out.xstrat_assoc, "P_M")
+        QQPlot_F(ChrX_SNVs_Assoc.out.xstrat_assoc, "P_F")
 }
 
 
@@ -231,30 +244,30 @@ workflow {
     }
 
     // Split autosomes and chrX (chrX will be subjected to specific QC and association tests):
-    Split_Autosomes_ChrX(QC.out.plink_QCed)
+    SplitAutosomesChrX(QC.out.plink_QCed)
     
     // Run SAIGE+ (GWAS and RVAT) on the autosomes:
-    CreatePhenoFile(Split_Autosomes_ChrX.out.autosomes,  // In practice: we only need the .fam file not the complete plink fileset
+    CreatePhenoFile(SplitAutosomesChrX.out.autosomes,  // In practice: we only need the .fam file not the complete plink fileset
                     QC.out.eigenvec, 
                     covar_file_ch)
 
     if(params.run_GWAS) {
-        SAIGE_GWAS(Split_Autosomes_ChrX.out.autosomes,
+        SAIGE_GWAS(SplitAutosomesChrX.out.autosomes,
                    CreatePhenoFile.out.phenoFile, 
                    regions_ch)
     }
 
     if(params.run_XWAS) {
         // Run XWAS (chrX-specific QC & GWAS) on chrX:
-        XWAS(Split_Autosomes_ChrX.out.chrX_basename,
-             Split_Autosomes_ChrX.out.chrX_bed,
-             Split_Autosomes_ChrX.out.chrX_bim,
-             Split_Autosomes_ChrX.out.chrX_fam,
+        XWAS(SplitAutosomesChrX.out.chrX_basename,
+             SplitAutosomesChrX.out.chrX_bed,
+             SplitAutosomesChrX.out.chrX_bim,
+             SplitAutosomesChrX.out.chrX_fam,
              CreatePhenoFile.out.phenoFile)
     }
 
     if(params.run_RVAT) {
-        SAIGE_RVAT(Split_Autosomes_ChrX.out.autosomes,
+        SAIGE_RVAT(SplitAutosomesChrX.out.autosomes,
                    CreatePhenoFile.out.phenoFile,
                    regions_ch,
                    glist_ch)

@@ -14,10 +14,10 @@ process ManhattanPlot {
         val(pval_col)
 
     output:
-        path(manhattan)
+        path(manhattan), optional: true
     
     script:
-        manhattan = "Manhattan_${assoc_tsv.baseName}.pdf"
+        manhattan = "Manhattan_${assoc_tsv.baseName}_${pval_col}.pdf"
         
         """
         set -eo pipefail
@@ -37,10 +37,10 @@ process QQPlot {
         val(pcol)
 
     output:
-        path(qqplot)
+        path(qqplot), optional: true
 
     script:
-        qqplot = "QQplot_${assoc_tsv.baseName}.png"
+        qqplot = "QQplot_${assoc_tsv.baseName}_${pcol}.png"
 
         """
         set -eo pipefail
@@ -48,6 +48,7 @@ process QQPlot {
         ${params.tools.Rscript} ${projectDir}/bin/QQplot.R -i ${assoc_tsv} -p ${pcol} -o ${qqplot}
         """
 }
+
 
 process SummaryStatistics {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "$it" }, mode: 'copy'

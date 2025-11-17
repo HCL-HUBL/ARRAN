@@ -61,15 +61,19 @@ if(file.exists(opt$i)) {
 
 pval_col <- which(colnames(saige_sv) == opt$p)
 
-pdf(opt$o, width = 14)
-    qqman::manhattan(x = saige_sv[!is.na(saige_sv[,pval_col]),],
-                     chr = opt$c,
-                     bp = opt$b, 
-                     snp = opt$m,
-                     p = opt$p,
-                     suggestiveline = -log10( 1 / nrow(saige_sv)),
-                     genomewideline = -log10( 0.05 / nrow(saige_sv)),
-                     col = c("#77AADD", "#EE8866"),
-                     main = "Manhattan Plot",
-                     cex = 0.6, cex.axis = 0.9)
-dev.off()
+# We plot the manhattan only if the pvalues are not NA. They can be NA when we 
+# stratify an analysis on chrX (P_M & and P_comb will be NAs only because we only have female samples, only P_F will contain p-values)
+if(!all(is.na(saige_sv[,pval_col]))) {
+    pdf(opt$o, width = 14)
+        qqman::manhattan(x = saige_sv[!is.na(saige_sv[,pval_col]),],
+                        chr = opt$c,
+                        bp = opt$b, 
+                        snp = opt$m,
+                        p = opt$p,
+                        suggestiveline = -log10( 1 / nrow(saige_sv)),
+                        genomewideline = -log10( 0.05 / nrow(saige_sv)),
+                        col = c("#77AADD", "#EE8866"),
+                        main = "Manhattan Plot",
+                        cex = 0.6, cex.axis = 0.9)
+    dev.off()
+}
