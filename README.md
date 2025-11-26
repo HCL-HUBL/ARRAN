@@ -11,3 +11,5 @@ This pipeline uses Plink to perform QC steps and SAIGE/XWAS to perform the assoc
  - Generation of logs and plots for the different steps of the pipeline (PCA, Manhattan, QQplot...)
 
 Please refer to our [wiki](https://github.com/HCL-HUBL/ARRAN/wiki) for detailed information about installing, running and interpreting the output of ARRAN.nf.
+
+![flowchart](./images/arran_flowchart.png "Simplified Arran flowchart.")
