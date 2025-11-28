@@ -3,41 +3,45 @@
 nextflow.enable.dsl = 2
 
 // Importing Processes from modules:
-include { GenotypesPreprocessing }  from './modules/QC.nf'
-include { BaseQC }                  from './modules/QC.nf'
-include { PlotPCA }                 from './modules/QC.nf'
-include { Pruning }                 from './modules/QC.nf'
-include { HetCoeff }                from './modules/QC.nf'
-include { HetFilter }               from './modules/QC.nf'
-include { HWEFlag }                 from './modules/QC.nf'
-include { CreateEigenvec }          from './modules/QC.nf'
-include { CreateOutputBaseQC }      from './modules/QC.nf'
-include { RunAdmixture }            from './modules/QC.nf'
-include { PlotAdmixture }           from './modules/QC.nf'
+include { GenotypesPreprocessing }  from './modules/GenotypesPreprocessing'
+include { BaseQC }                  from './modules/BaseQC'
+include { Pruning }                 from './modules/Pruning'
+include { HetCoeff }                from './modules/Het/HetCoeff'
+include { HetFilter }               from './modules/Het/HetFilter'
+include { HWEFlag }                 from './modules/HWEFlag'
+include { CreateEigenvec }          from './modules/PCA/CreateEigenvec'
+include { PlotPCA }                 from './modules/PCA/PlotPCA'
+include { CreateOutputBaseQC }      from './modules/CreateOutputBaseQC'
+include { RunAdmixture }            from './modules/Admixture/RunAdmixture'
+include { PlotAdmixture }           from './modules/Admixture/PlotAdmixture'
 
-include { SplitAutosomesChrX }      from './modules/Split.nf'
-include { CreateOutputGWAS }        from './modules/Split.nf'
-include { CreateOutputRVAT }        from './modules/Split.nf'
+// Processes to split the data into autosomes and chrX and to split each subset 
+// into files ready for single-variants analyses and gene-based analyses.
+// Process that will split the SNPs belonging to the autosomes (1-22 + 25(PAR)) vs. chrX (23)
+include { SplitAutosomesChrX }      from './modules/Split/SplitAutosomesChrX'
+include { CreateOutputGWAS }        from './modules/Split/CreateOutputGWAS'
+include { CreateOutputRVAT }        from './modules/Split/CreateOutputRVAT'
 
-include { CreatePhenoFile }         from './modules/SAIGE.nf'
-include { CreateSparseGRM }         from './modules/SAIGE.nf'
-include { SaigeFitNullModel }       from './modules/SAIGE.nf'
-include { SaigeSingleAssoc }        from './modules/SAIGE.nf'
-include { CreateGroupFile }         from './modules/SAIGE.nf'
-include { SaigeGeneAssoc }          from './modules/SAIGE.nf'
+include { CreatePhenoFile }         from './modules/SAIGE/CreatePhenoFile'
+include { CreateSparseGRM }         from './modules/SAIGE/CreateSparseGRM'
+include { SaigeFitNullModel }       from './modules/SAIGE/SaigeFitNullModel'
+include { SaigeSingleAssoc }        from './modules/SAIGE/SaigeSingleAssoc'
+include { CreateGroupFile }         from './modules/SAIGE/CreateGroupFile'
+include { SaigeGeneAssoc }          from './modules/SAIGE/SaigeGeneAssoc'
 
-include { ChrX_specific_QC }        from './modules/XWAS.nf'
-include { ChrX_SNVs_Assoc }         from './modules/XWAS.nf'
+include { XwasQC }                  from './modules/XWAS/XwasQC'
+include { XwasSNVsAssoc }           from './modules/XWAS/XwasSNVsAssoc'
 
-include { ManhattanPlot }           from './modules/Downstream.nf'
-include { ManhattanPlot as ManhattanPlot_comb }      from './modules/Downstream.nf'
-include { ManhattanPlot as ManhattanPlot_M }         from './modules/Downstream.nf'
-include { ManhattanPlot as ManhattanPlot_F }         from './modules/Downstream.nf'
-include { QQPlot }                  from './modules/Downstream.nf'
-include { QQPlot as QQPlot_comb }   from './modules/Downstream.nf'
-include { QQPlot as QQPlot_M }      from './modules/Downstream.nf'
-include { QQPlot as QQPlot_F }      from './modules/Downstream.nf'
-include { SummaryStatistics }       from './modules/Downstream.nf'
+include { QQPlot }                  from './modules/QQPlot'
+include { QQPlot as QQPlot_comb }   from './modules/QQPlot'
+include { QQPlot as QQPlot_M }      from './modules/QQPlot'
+include { QQPlot as QQPlot_F }      from './modules/QQPlot'
+include { SummaryStatistics }       from './modules/SummaryStatistics'
+include { ManhattanPlot }           from './modules/ManhattanPlot'
+include { ManhattanPlot as ManhattanPlot_comb }      from './modules/ManhattanPlot'
+include { ManhattanPlot as ManhattanPlot_M }         from './modules/ManhattanPlot'
+include { ManhattanPlot as ManhattanPlot_F }         from './modules/ManhattanPlot'
+
 
 // Initialising the options with default values:
 // General options:
@@ -215,21 +219,21 @@ workflow XWAS {
         n_var = plink_chrX_bim.countLines()
 
         if(params.trait_type == "binary") {
-            ChrX_specific_QC(plink_chrX_basename, plink_chrX_bed, plink_chrX_bim, plink_chrX_fam, n_var)
-            chrX_ch = ChrX_specific_QC.out.plink_chrX_QCed
+            XwasQC(plink_chrX_basename, plink_chrX_bed, plink_chrX_bim, plink_chrX_fam, n_var)
+            chrX_ch = XwasQC.out.plink_chrX_QCed
         } else {
             chrX_ch = plink_chrX
         }
 
-        ChrX_SNVs_Assoc(chrX_ch, phenoFile_ch)
+        XwasSNVsAssoc(chrX_ch, phenoFile_ch)
 
-        ManhattanPlot_comb(ChrX_SNVs_Assoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_comb_Fisher")
-        ManhattanPlot_M(ChrX_SNVs_Assoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_M")
-        ManhattanPlot_F(ChrX_SNVs_Assoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_F")
+        ManhattanPlot_comb(XwasSNVsAssoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_comb_Fisher")
+        ManhattanPlot_M(XwasSNVsAssoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_M")
+        ManhattanPlot_F(XwasSNVsAssoc.out.xstrat_assoc, "CHR", "BP", "SNP", "P_F")
 
-        QQPlot_comb(ChrX_SNVs_Assoc.out.xstrat_assoc, "P_comb_Fisher")
-        QQPlot_M(ChrX_SNVs_Assoc.out.xstrat_assoc, "P_M")
-        QQPlot_F(ChrX_SNVs_Assoc.out.xstrat_assoc, "P_F")
+        QQPlot_comb(XwasSNVsAssoc.out.xstrat_assoc, "P_comb_Fisher")
+        QQPlot_M(XwasSNVsAssoc.out.xstrat_assoc, "P_M")
+        QQPlot_F(XwasSNVsAssoc.out.xstrat_assoc, "P_F")
 }
 
 
