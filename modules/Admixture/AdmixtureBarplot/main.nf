@@ -1,4 +1,4 @@
-process PlotAdmixture {
+process AdmixtureBarplot {
     publishDir "${params.outdir}/plots/", mode: 'copy'
 
     input:
@@ -8,7 +8,7 @@ process PlotAdmixture {
         path(admixture_barplot)
 
     script:
-        admixture_barplot = "${admixture_table}.pdf"
+        admixture_barplot = "${admixture_table}_barplot.pdf"
 
         """
         set -eo pipefail

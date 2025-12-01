@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 # Script to make the barplots from Admixture's output:
 # Each bar correspond to a sample and the colors corresponds to the % of genome
 # coming from each ancestry.

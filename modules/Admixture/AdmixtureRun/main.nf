@@ -1,5 +1,5 @@
-process RunAdmixture {
-    publishDir "${params.outdir}/admixture/", mode: 'copy'
+process AdmixtureRun {
+    publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "admixture/$it" }, mode: 'copy'
 
     input:
         tuple val(pruned_basename), path(pruned_files)
@@ -15,6 +15,6 @@ process RunAdmixture {
         """
         set -eo pipefail
 
-        ${params.tools.admixture} --cv ${pruned_basename}.bed ${params.admixture_K} > ${admixture_log}; 
+        ${params.tools.admixture} --cv ${pruned_basename}.bed ${params.admixture_K} > ${admixture_log};
         """
 }

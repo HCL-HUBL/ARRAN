@@ -13,11 +13,12 @@ include { HWEFlag }                 from './modules/HWEFlag'
 include { CreateEigenvec }          from './modules/PCA/CreateEigenvec'
 include { PlotPCA }                 from './modules/PCA/PlotPCA'
 include { CreateOutputBaseQC }      from './modules/CreateOutputBaseQC'
-include { RunAdmixture }            from './modules/Admixture/RunAdmixture'
-include { PlotAdmixture }           from './modules/Admixture/PlotAdmixture'
 
-// Processes to split the data into autosomes and chrX and to split each subset 
-// into files ready for single-variants analyses and gene-based analyses.
+include { AdmixtureRun }            from './modules/Admixture/AdmixtureRun'
+include { AdmixtureBarplot }        from './modules/Admixture/AdmixtureBarplot'
+include { AdmixturePieplot }        from './modules/Admixture/AdmixturePieplot'
+
+// Processes to split the data into autosomes and chrX (and then into GWAS and RVAS)
 // Process that will split the SNPs belonging to the autosomes (1-22 + 25(PAR)) vs. chrX (23)
 include { SplitAutosomesChrX }      from './modules/Split/SplitAutosomesChrX'
 include { CreateOutputGWAS }        from './modules/Split/CreateOutputGWAS'
@@ -82,7 +83,9 @@ params.saige_regions    = ""                    // (optional) list of regions to
 params.saige_extension  = 5                     // When assigning SNPs to genes, extends the gene bounds by this many kbp
 
 // Admixture:
+params.run_admixture    = false                 // Boolean indicating whether to run Admixture
 params.admixture_K      = 2                     // Number of expected populations in the dataset
+
 
 // Checking input values:
 if(params.plink_fileset == "")              error("\nERROR in config: 'plink_fileset' is required")
@@ -109,10 +112,9 @@ if(params.pr_step < 1)                      error("\nERROR in config: 'pr_step' 
 if(params.pr_r2 < 0 || params.pr_r2 > 1)    error("\nERROR in config: 'pr_r2' must be between 0 and 1, current value '${params.pr_r2}'")
 
 if(params.gwas_maf < 0)                     error("\nERROR in config: 'gwas_maf' must be >= 0, current value '${params.gwas_maf}'")
-
+if(params.xwas_alpha < 0)                   error("\nERROR in config: 'xwas_alpha' must be >= 0, current value '${params.xwas_alpha}'")
 if(params.admixture_K <= 0)                 error("\nERROR in config: 'admixture_K' must be > 0, current value '${params.admixture_K}'")
 
-if(params.xwas_alpha < 0)                   error("\nERROR in config: 'xwas_alpha' must be >= 0, current value '${params.xwas_alpha}'")
 
 // Initialising Channels based on params:
 plink_ch        = Channel.fromFilePairs(params.plink_fileset, size: 3)
@@ -122,7 +124,6 @@ remove_ch       = params.qc_remove ? Channel.fromPath(params.qc_remove) : []
 regions_ch      = params.saige_regions ? Channel.fromPath(params.saige_regions) : []
 
 
-// Subworklow for the Quality Control on the genotype data
 workflow QC {
     take:
         plink_ch
@@ -142,9 +143,6 @@ workflow QC {
         CreateEigenvec(CreateOutputBaseQC.out.plink_QCed)
         PlotPCA(CreateOutputBaseQC.out.plink_QCed, CreateEigenvec.out.eigenvec)
 
-        // RunAdmixture(CreateOutputBaseQC.out.plink_QCed_pruned)
-        // PlotAdmixture(RunAdmixture.out.admixture_table)
-
     emit:
         plink_QCed          = CreateOutputBaseQC.out.plink_QCed
         plink_QCed_pruned   = CreateOutputBaseQC.out.plink_QCed_pruned
@@ -152,7 +150,18 @@ workflow QC {
 }
 
 
-// Subworklow for the common variant Single Association analysis with SAIGE+
+workflow ADMIXTURE {
+    take:
+        plink_QCed_pruned
+        eigenvec
+
+    main:
+        AdmixtureRun(plink_QCed_pruned)
+        AdmixtureBarplot(AdmixtureRun.out.admixture_table)
+        AdmixturePieplot(AdmixtureRun.out.admixture_table, eigenvec)
+}
+
+
 workflow SAIGE_GWAS {
     take:
         autosomes_QCed
@@ -179,7 +188,6 @@ workflow SAIGE_GWAS {
 }
 
 
-// Subworklow for the Rare Variant Association Test with SAIGE+
 workflow SAIGE_RVAT {
     take:
         autosomes_QCed
@@ -243,16 +251,19 @@ workflow {
     // Perform base Quality Control on the genotype data:
     QC(plink_ch, remove_ch)
 
+    if(params.run_admixture) {
+        ADMIXTURE(QC.out.plink_QCed_pruned, QC.out.eigenvec)
+    }
+
+    // Create the sparse GRM (for SAIGE):
     if(params.makeGRM) {
-        // Create the sparse GRM (for SAIGE):
         CreateSparseGRM(QC.out.plink_QCed_pruned)
     }
 
     // Split autosomes and chrX (chrX will be subjected to specific QC and association tests):
     SplitAutosomesChrX(QC.out.plink_QCed)
     
-    // Run SAIGE+ (GWAS and RVAT) on the autosomes:
-    CreatePhenoFile(SplitAutosomesChrX.out.autosomes,  // In practice: we only need the .fam file not the complete plink fileset
+    CreatePhenoFile(SplitAutosomesChrX.out.autosomes, // In practice: we only need the .fam file
                     QC.out.eigenvec, 
                     covar_file_ch)
 
@@ -263,7 +274,6 @@ workflow {
     }
 
     if(params.run_XWAS) {
-        // Run XWAS (chrX-specific QC & GWAS) on chrX:
         XWAS(SplitAutosomesChrX.out.chrX_basename,
              SplitAutosomesChrX.out.chrX_bed,
              SplitAutosomesChrX.out.chrX_bim,
