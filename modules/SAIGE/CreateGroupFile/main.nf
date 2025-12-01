@@ -23,6 +23,6 @@ process CreateGroupFile {
         ${params.tools.plink} --annotate variants.report ranges=${glist} 
         sed 's/\\t/ /g' plink.annot  | cut -d " " -f 2,4  | sed 's/(.*//g' > plink.annot.clean
 
-        ${params.tools.Rscript} ${projectDir}/bin/create_groupFile.R -a plink.annot.clean
+        create_groupFile.R -a plink.annot.clean
         """
 }

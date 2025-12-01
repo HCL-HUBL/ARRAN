@@ -1,6 +1,7 @@
 #!/usr/bin/env nextflow
 
 nextflow.enable.dsl = 2
+nextflow.enable.moduleBinaries = true
 
 // Importing Processes from modules:
 include { GenotypesPreprocessing }  from './modules/GenotypesPreprocessing'
@@ -43,7 +44,7 @@ include { ManhattanPlot as ManhattanPlot_M }         from './modules/ManhattanPl
 include { ManhattanPlot as ManhattanPlot_F }         from './modules/ManhattanPlot'
 
 
-// Initialising the options with default values:
+// Initialising the options:
 // General options:
 params.plink_fileset    = ""
 params.covar_file       = ""                   // Path to file listing the covariates to be included in the model

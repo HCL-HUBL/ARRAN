@@ -15,7 +15,7 @@ process PlotPCA {
         """
         set -eo pipefail
 
-        ${params.tools.Rscript} ${projectDir}/bin/PCA.R \
+        PCA.R \
             -i ${eigenvec} \
             -f ${qced_basename}.fam \
             ${binary_cmd} \

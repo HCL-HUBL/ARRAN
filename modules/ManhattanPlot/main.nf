@@ -17,7 +17,8 @@ process ManhattanPlot {
         """
         set -eo pipefail
 
-        ${params.tools.Rscript} ${projectDir}/bin/manhattan_plot.R -i ${assoc_tsv} \
+        manhattan_plot.R \
+            -i ${assoc_tsv} \
             -c ${chr_col} -b ${pos_col} -m ${marker_col} -p ${pval_col} \
             -o ${manhattan}
         """

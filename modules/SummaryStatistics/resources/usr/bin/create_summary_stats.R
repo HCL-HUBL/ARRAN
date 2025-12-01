@@ -1,5 +1,6 @@
-# Script to create Summary Statistics from SAIGE / XWAS output
+#!/usr/bin/env Rscript
 
+# Script to create Summary Statistics from SAIGE / XWAS output
 # The format is described in: https://github.com/EBISPOT/gwas-summary-statistics-standard
 # (from: https://www.ebi.ac.uk/gwas/docs/summary-statistics-format)
 

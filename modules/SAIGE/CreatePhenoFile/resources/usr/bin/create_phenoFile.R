@@ -1,11 +1,11 @@
-# Script to create the phenoFile to input in SAIGE+ for the GWAS and RVAT analyses:
+#!/usr/bin/env Rscript
 
+# Script to create the phenoFile to input in SAIGE+ for the GWAS and RVAT analyses:
 # Takes a .fam file and a .covariates file in the plink format and outputs a file
 # corresponding to SAIGE format: id + covars + phenotype.
 
 # Our nextflow expects the column with the ids to be named as "IID" and the column with
 # the phenotypes as "PHENOTYPE".
-
 # The covariates column names must be defined in the config file.
 
 if(!require(optparse, quietly = T)) install.packages(optparse) 

@@ -14,6 +14,6 @@ process SummaryStatistics {
         """
         set -eo pipefail
 
-        ${params.tools.Rscript} ${projectDir}/bin/create_summary_stats.R -i ${assoc_tsv} -s ${software} -t ${params.trait_type} -o ${summ_stats}
+        create_summary_stats.R -i ${assoc_tsv} -s ${software} -t ${params.trait_type} -o ${summ_stats}
         """
 }

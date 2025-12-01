@@ -14,6 +14,6 @@ process QQPlot {
         """
         set -eo pipefail
 
-        ${params.tools.Rscript} ${projectDir}/bin/QQplot.R -i ${assoc_tsv} -p ${pcol} -o ${qqplot}
+        QQplot.R -i ${assoc_tsv} -p ${pcol} -o ${qqplot}
         """
 }

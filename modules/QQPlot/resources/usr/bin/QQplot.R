@@ -1,4 +1,6 @@
-# Script to create a QQ plot from a tsv file containing p-valuee
+#!/usr/bin/env Rscript
+
+# Script to create a QQ plot from a tsv file containing p-value
 # Writes it to a pdf file
 
 if(!require(optparse, quietly = T)) install.packages(optparse) 

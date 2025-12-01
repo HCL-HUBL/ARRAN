@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 # Script to create a manhattan plot from SAIGE single variants association output
 # Writes it to a pdf file
 

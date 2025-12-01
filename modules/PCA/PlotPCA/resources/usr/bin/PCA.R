@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 # Script to plot a PCA based on a .eigenvec file produced with plink (option --pca).
 
 # This script plots the PCA in a pdf file.

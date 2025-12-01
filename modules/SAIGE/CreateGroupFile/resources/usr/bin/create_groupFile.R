@@ -1,5 +1,6 @@
-# Script to create the groupFile to input in SAIGE+ for the RVAT analysis:
+#!/usr/bin/env Rscript
 
+# Script to create the groupFile to input in SAIGE+ for the RVAT analysis:
 # Takes the plink.annot.clean file created within the CreateGroupFile process and 
 # writes a .groupFile for the RVAT analysis with SAIGE+
 

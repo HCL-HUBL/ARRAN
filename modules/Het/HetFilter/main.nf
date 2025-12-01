@@ -12,9 +12,7 @@ process HetFilter {
     script:
         """
         set -eo pipefail
-
-        ${params.tools.Rscript} ${projectDir}/bin/het_check.R \
-            -i ${geno_het} \
-            -f ${params.qc_hetfilter}
+        
+        het_check.R -i ${geno_het} -f ${params.qc_hetfilter}
         """
 }

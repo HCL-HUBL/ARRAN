@@ -13,7 +13,7 @@ process PlotAdmixture {
         """
         set -eo pipefail
 
-        ${params.tools.Rscript} ${projectDir}/bin/admixture.R \
+        admixture.R \
             -i ${admixture_table} \
             -k ${params.admixture_K} \
             -o ${admixture_barplot}

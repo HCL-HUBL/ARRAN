@@ -20,7 +20,7 @@ process CreatePhenoFile {
         """
         set -eo pipefail
 
-        ${params.tools.Rscript} ${projectDir}/bin/create_phenoFile.R \
+        create_phenoFile.R \
             -f ${plink_basename}.fam \
             -e ${eigenvec} \
             -c ${covar_file} \

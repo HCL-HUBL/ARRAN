@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 # Script to filter individuals with too high or too low heterozygosity (F coeff).
 # Samples are filtered if their F coeff is  or  3 SDs from the population mean.
 
