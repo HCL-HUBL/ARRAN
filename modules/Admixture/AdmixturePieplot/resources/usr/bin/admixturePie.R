@@ -68,19 +68,19 @@ if(file.exists(opt$a)) {
 pca_admx <- cbind(eigenvec, admixture)
 pca_admx_wide <- pca_admx[,c(2:4,(ncol(eigenvec)+1):(ncol(eigenvec)+ncol(admixture)))]
 
+xrange <- range(pca_admx_wide$PC1)
+yrange <- range(pca_admx_wide$PC2)
+L <- max(diff(xrange), diff(yrange))
+xlim_corrected <- c(mean(xrange) - L/2 - L/10, mean(xrange) + L/2 + L/10)
+ylim_corrected <- c(mean(yrange) - L/2 - L/10, mean(yrange) + L/2 + L/10)
+
 pie_polys <- do.call(rbind, lapply(1:nrow(pca_admx_wide), function(i) {
         make_pie_polygons(values = unlist(pca_admx_wide[i, colnames(admixture)]),
                           cx = pca_admx_wide$PC1[i],
                           cy = pca_admx_wide$PC2[i],
-                          radius = 0.01,
+                          radius = L/100,
                           id = pca_admx_wide$IID[i])})
                     )
-
-xrange <- range(pca_admx_wide$PC1)
-yrange <- range(pca_admx_wide$PC2)
-L <- max(diff(xrange), diff(yrange))
-xlim_corrected <- c(mean(xrange) - L/2, mean(xrange) + L/2)
-ylim_corrected <- c(mean(yrange) - L/2, mean(yrange) + L/2)
 
 pdf(opt$o, width = 8, height = 8)
     ggplot(pie_polys, aes(x = x, y = y, group = interaction(pie_id, slice), fill = factor(slice))) +
