@@ -71,8 +71,8 @@ pca_admx_wide <- pca_admx[,c(2:4,(ncol(eigenvec)+1):(ncol(eigenvec)+ncol(admixtu
 xrange <- range(pca_admx_wide$PC1)
 yrange <- range(pca_admx_wide$PC2)
 L <- max(diff(xrange), diff(yrange))
-xlim_corrected <- c(mean(xrange) - L/2 - L/10, mean(xrange) + L/2 + L/10)
-ylim_corrected <- c(mean(yrange) - L/2 - L/10, mean(yrange) + L/2 + L/10)
+xlim_corrected <- c(mean(xrange) - L/2 - L/100, mean(xrange) + L/2 + L/100)
+ylim_corrected <- c(mean(yrange) - L/2 - L/100, mean(yrange) + L/2 + L/100)
 
 pie_polys <- do.call(rbind, lapply(1:nrow(pca_admx_wide), function(i) {
         make_pie_polygons(values = unlist(pca_admx_wide[i, colnames(admixture)]),
