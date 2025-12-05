@@ -218,20 +218,24 @@ workflow SAIGE_RVAT {
 
 workflow XWAS {
     take:
-        plink_chrX_basename
-        plink_chrX_bed
-        plink_chrX_bim
-        plink_chrX_fam
+        chrX_basename
+        chrX_bed
+        chrX_bim
+        chrX_fam
         phenoFile_ch
 
     main:
-        n_var = plink_chrX_bim.countLines()
+        n_var = chrX_bim.countLines()
 
+        // X-specific QC steps only applicable to binary traits:
         if(params.trait_type == "binary") {
-            XwasQC(plink_chrX_basename, plink_chrX_bed, plink_chrX_bim, plink_chrX_fam, n_var)
+            XwasQC(chrX_basename, chrX_bed, chrX_bim, chrX_fam, n_var)
             chrX_ch = XwasQC.out.plink_chrX_QCed
         } else {
-            chrX_ch = plink_chrX
+            chrX_bed_pairs = chrX_basename.combine(chrX_bed)
+            chrX_bim_pairs = chrX_basename.combine(chrX_bim)
+            chrX_fam_pairs = chrX_basename.combine(chrX_fam)
+            chrX_ch = chrX_bed_pairs.join(chrX_bim_pairs).join(chrX_fam_pairs).map { [ it[0], [ it[1], it[2], it[3] ] ] }
         }
 
         XwasSNVsAssoc(chrX_ch, phenoFile_ch)

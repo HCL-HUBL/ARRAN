@@ -43,17 +43,24 @@ es_type = ""
 if(opt$t == "binary") {
     es_type = "odds_ratio"
 } else if(opt$t == "quantitative") {
-    es_type = "binary"
+    es_type = "beta"
 } else {
     stop(paste0("Trait type must be 'binary' or 'quantitative', current value: '", opt$t, "'"))
 }
 
 # Changing the column names to stay consistent regardless of the software:
 if(opt$s == "SAIGE") {
-    colnames(assoc) <- c("chromosome", "base_pair_location", "rsid", "other_allele", "effect_allele",
-                        "AC_Allele2", "effect_allele_frequency", "MissingRate", es_type, "standard_error", 
-                        "Tstat", "var", "p_value", "p.value.NA", "Is.SPA", "AF_case", "AF_ctrl", 
-                        "N_case", "N_ctrl")
+    if(opt$t == "binary"){
+        colnames(assoc) <- c("chromosome", "base_pair_location", "rsid", "other_allele", "effect_allele",
+                             "AC_Allele2", "effect_allele_frequency", "MissingRate", es_type, "standard_error", 
+                             "Tstat", "var", "p_value", "p.value.NA", "Is.SPA", "AF_case", "AF_ctrl", 
+                             "N_case", "N_ctrl")
+        assoc$n <- assoc$N_case + assoc$N_ctrl
+    } else {
+        colnames(assoc) <- c("chromosome", "base_pair_location", "rsid", "other_allele", "effect_allele",
+                            "AC_Allele2", "effect_allele_frequency", "MissingRate", es_type, "standard_error", 
+                            "Tstat", "var", "p_value", "n")
+    }
 } else if(opt$s == "XWAS") {
     # colnames(assoc) <- c("chromosome", "rsid", "base_pair_location", "other_allele", "affect_allele",
     #                      "TEST", "OR_M", "P_M", es_type, "P_F", "Fisher_Chi_Squared", "p_value")
@@ -64,6 +71,6 @@ if(opt$s == "SAIGE") {
 
 summary_stats <- assoc[,c("chromosome", "base_pair_location", "effect_allele",
                           "other_allele", es_type, "standard_error",
-                          "effect_allele_frequency", "p_value", "rsid")]
+                          "effect_allele_frequency", "p_value", "rsid", "n")]
 
 write.table(x = summary_stats, file = opt$o, quote = F, sep = "\t", row.names = F)
