@@ -1,0 +1,126 @@
+#!/usr/bin/env Rscript
+
+# Script for the regional plot, based on the summary statistic file generated with ARRAN
+# But should be compatible with any summary statistic file.
+
+if(!require(optparse, quietly = T)) install.packages(optparse) 
+if(!require(ggplot2, quietly = T)) install.packages(ggplot2) 
+
+# Parsing the option from the Rscript command
+option_list <- list(
+    make_option(c("-i", "--input"), 
+                type = "character", 
+                default = "", 
+                help = "Full path to the summary statistics file.",
+                metavar = "<PATH_TO_STATS>"),
+
+    make_option(c("-s", "--snp"),
+                type = "character",
+                default = "",
+                help = "Identifier of the top SNP. The regional plot will be centered around that SNP.",
+                metavar = "<RSID>"),
+    
+    make_option(c("-w", "--winsize"),
+                type = "numeric",
+                default = 100000,
+                help = "Size of the region to plot",
+                metavar = "<SIZE>"),
+    
+    make_option(c("-l", "--ld"),
+                type = "character",
+                default = "",
+                help = "Full path to the LD file.",
+                metavar = "<LD_FILE>"),
+
+    make_option(c("-g", "--genelist"),
+                type = "character",
+                default = "",
+                help = "Full path to the file listing gene positions.",
+                metavar = "<GLIST-HG38>"),
+
+    make_option(c("-o", "--output"),
+                type = "character",
+                default = "regionplot.pdf",
+                help = "Name of the output file.",
+                metavar = "<OUTNAME>"),
+
+    make_option(c("-v", "--verbose"),
+                type = "logical",
+                default = FALSE,
+                help = "Print information during execution (FALSE by default)",
+                metavar = "<TRUE,FALSE>")
+);
+
+opt <- parse_args(OptionParser(option_list = option_list))
+
+# Reading the file with the summary statistics:
+if(file.exists(opt$i)) {
+    if(opt$v) print(paste0("Reading the summary statistics file: ", opt$i))
+    summ_stat <- read.table(file = opt$i, header = T, sep = "\t", stringsAsFactors = F)
+} else { stop(paste0("File '", opt$i, "' does not exist.")) }
+
+# Reading the file with the LD info:
+if(file.exists(opt$l)) {
+    if(opt$v) print(paste0("Reading the LD file: ", opt$l))
+    LD_info <- read.table(file = opt$l, header = T, sep = "\t", stringsAsFactors = F)
+} else { stop(paste0("File '", opt$l, "' does not exist.")) }
+
+# Reading the gene list file:
+if(file.exists(opt$g)) {
+    if(opt$v) print(paste0("Reading the gene list: ", opt$g))
+    genes <- read.table(file = opt$g, header = F)
+    colnames(genes) <- c("chr", "start", "stop", "name")
+} else { stop(paste0("File '", opt$g, "' does not exist.")) }
+
+# Checking if the top SNP is in the file:
+if(opt$s %in% summ_stat$rsid) {
+    rsid <- opt$s
+    soi <- summ_stat[summ_stat$rsid == rsid,]
+} else { stop(paste0("SNP: '", opt$s, "' is not in the summary file: '", opt$i ,"'"))}
+
+# Checking the window size:
+if(opt$w <= 0) {
+    stop("The window size must be > 0.")
+} else { win_size <- as.numeric(opt$w) }
+
+min_pos <- min(soi$base_pair_location) - win_size/2
+max_pos <- max(soi$base_pair_location) + win_size/2
+
+# Merging LD info with summary statistics:
+if(opt$v) print("Merging LD and summary statistics")
+summ_stat_ld <- merge(x = summ_stat, y = LD_info[,c("SNP_B", "R2")],
+                      by.x = "rsid", by.y = "SNP_B",
+                      all.x = TRUE, all.y = FALSE)
+
+summ_stat_sub <- summ_stat_ld[summ_stat_ld$chromosome == soi$chromosome & 
+                                summ_stat_ld$base_pair_location > min_pos & 
+                                summ_stat_ld$base_pair_location < max_pos,]
+
+summ_stat_sub$R2[is.na(summ_stat_sub$R2)] <- 0
+
+# Plotting the manhattan plot around the top SNP:
+gg_region <- ggplot(summ_stat_sub, aes(x = base_pair_location, y = -log10(p_value))) + 
+               geom_point(data = summ_stat_sub, aes(fill = R2), pch = 21, size = 3) + 
+               geom_point(data = soi, aes(x = base_pair_location, y = -log10(p_value)), colour = "purple", pch = 18, size = 5) +
+                geom_text(data = soi, aes(x = base_pair_location, y = -log10(p_value), label = rsid), colour = "purple", hjust = -0.3, vjust = -0.1)
+
+# Adding the genes:
+genes_in_region <- genes[genes$chr == soi$chromosome & genes$stop > min_pos & genes$start < max_pos,]
+genes_in_region <- genes_in_region[order(genes_in_region$start),]
+# Removing coordinates outside the range:
+genes_in_region$start[genes_in_region$start < min_pos] <- min_pos
+genes_in_region$stop[genes_in_region$stop > max_pos] <- max_pos
+# To avoid overlapping gene names on the plot:
+vjust_pos <- rep(x = c(-2, 2, -1, 2), times = length(genes_in_region$name))[1:length(genes_in_region$name)] 
+gg_region <- gg_region +
+                geom_segment(data = genes_in_region, aes(x = start, xend = stop, y = 0, yend = 0, colour = name, size = 4), 
+                             alpha = 0.2) +
+                geom_text(data = genes_in_region, aes(x = start, y = 0, label = name, vjust = vjust_pos, colour = name))
+
+# Adjusting labels and theme:
+gg_region <- gg_region + theme_bw() + scale_fill_gradient(low = "#414487", high = "#FDE725FF") + xlab(paste0("chr", soi$chromosome))
+
+if(opt$v) print(paste0("Writing plot to: '", opt$o, "'.pdf"))
+pdf(paste0(opt$o,".pdf"), width = 8)
+     print(gg_region)
+dev.off()

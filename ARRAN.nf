@@ -40,6 +40,7 @@ include { QQPlot as QQPlot_M }      from './modules/QQPlot'
 include { QQPlot as QQPlot_F }      from './modules/QQPlot'
 include { SummaryStatistics }       from './modules/SummaryStatistics'
 include { ManhattanPlot }           from './modules/ManhattanPlot'
+include { RegionPlot }              from './modules/RegionPlot'
 include { ManhattanPlot as ManhattanPlot_comb }      from './modules/ManhattanPlot'
 include { ManhattanPlot as ManhattanPlot_M }         from './modules/ManhattanPlot'
 include { ManhattanPlot as ManhattanPlot_F }         from './modules/ManhattanPlot'
@@ -167,6 +168,7 @@ workflow SAIGE_GWAS {
         autosomes_QCed
         phenoFile_ch
         regions_ch
+        glist
 
     main:
         CreateOutputGWAS(autosomes_QCed, regions_ch)
@@ -182,6 +184,7 @@ workflow SAIGE_GWAS {
         ManhattanPlot(SaigeSingleAssoc.out.saige_sv, "CHR", "POS", "MarkerID", "p.value")
         QQPlot(SaigeSingleAssoc.out.saige_sv, "p.value")
         SummaryStatistics(SaigeSingleAssoc.out.saige_sv, "SAIGE")
+        RegionPlot(CreateOutputGWAS.out.plink_GWAS, SummaryStatistics.out, glist)
 
     emit:
         SaigeSingleAssoc.out.saige_sv
@@ -274,7 +277,8 @@ workflow {
     if(params.run_GWAS) {
         SAIGE_GWAS(SplitAutosomesChrX.out.autosomes,
                    CreatePhenoFile.out.phenoFile, 
-                   regions_ch)
+                   regions_ch,
+                   glist_ch)
     }
 
     if(params.run_XWAS) {
