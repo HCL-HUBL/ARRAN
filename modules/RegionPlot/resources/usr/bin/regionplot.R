@@ -100,7 +100,6 @@ summ_stat_sub$R2[is.na(summ_stat_sub$R2)] <- 0
 
 # Plotting the manhattan plot around the top SNP:
 gg_region <- ggplot(summ_stat_sub, aes(x = base_pair_location, y = -log10(p_value))) + 
-               geom_point(data = summ_stat_sub, aes(fill = R2), pch = 21, size = 3) + 
                geom_point(data = soi, aes(x = base_pair_location, y = -log10(p_value)), colour = "purple", pch = 18, size = 5) +
                 geom_text(data = soi, aes(x = base_pair_location, y = -log10(p_value), label = rsid), colour = "purple", hjust = -0.3, vjust = -0.1)
 
@@ -113,14 +112,25 @@ genes_in_region$stop[genes_in_region$stop > max_pos] <- max_pos
 # To avoid overlapping gene names on the plot:
 vjust_pos <- rep(x = c(-2, 2, -1, 2), times = length(genes_in_region$name))[1:length(genes_in_region$name)] 
 gg_region <- gg_region +
-                geom_segment(data = genes_in_region, aes(x = start, xend = stop, y = 0, yend = 0, colour = name, size = 4), 
-                             alpha = 0.2) +
+                geom_segment(data = genes_in_region, aes(x = start, xend = stop, y = 0, yend = 0, colour = name), 
+                             size = 4, alpha = 0.2) +
                 geom_text(data = genes_in_region, aes(x = start, y = 0, label = name, vjust = vjust_pos, colour = name))
 
 # Adjusting labels and theme:
 gg_region <- gg_region + theme_bw() + scale_fill_gradient(low = "#414487", high = "#FDE725FF") + xlab(paste0("chr", soi$chromosome))
 
+# Plot colored by R2:
+gg_R2 <- gg_region + geom_point(data = summ_stat_sub, aes(fill = R2), pch = 21, size = 3)
+
+# Plot colored by Effect Size:
+# The column can be "odds_ratio" or "beta" depending on the phenotype.
+# There is probably a more elegant way of dealing with a variable column name with ggplot2: 
+ES_name <- colnames(summ_stat_sub)[6]
+if(ES_name == "odds_ratio") gg_ES <- gg_region + geom_point(data = summ_stat_sub, aes(fill = odds_ratio), pch = 21, size = 3)
+if(ES_name == "beta") gg_ES <- gg_region + geom_point(data = summ_stat_sub, aes(fill = beta), pch = 21, size = 3)
+
 if(opt$v) print(paste0("Writing plot to: '", opt$o, "'.pdf"))
-pdf(paste0(opt$o,".pdf"), width = 8)
-     print(gg_region)
+pdf(paste0(opt$o,".pdf"), width = 12)
+     print(gg_R2)
+     print(gg_ES)
 dev.off()
