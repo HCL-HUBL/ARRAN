@@ -1,16 +1,22 @@
 #!/usr/bin/env Rscript
 
 # Script to create the groupFile to input in SAIGE+ for the RVAT analysis:
-# Takes the plink.annot.clean file created within the CreateGroupFile process and 
+# Takes the genes.annot.clean file created within the CreateGroupFile process and 
 # writes a .groupFile for the RVAT analysis with SAIGE+
 
 if(!require(optparse, quietly = T)) install.packages(optparse) 
 
 option_list <- list(
-    make_option(c("-a", "--annot"), 
+    make_option(c("-g", "--genesets"), 
                 type = "character", 
                 default = "", 
-                help = "Full path to plink.annot.clean file.",
+                help = "Full path to 'genes.annot.clean' file.",
+                metavar = "<PATH_TO_GENES>"),
+
+    make_option(c("-a", "--annot"),
+                type = "character",
+                default = "",
+                help = "Full path to the annotation file.",
                 metavar = "<PATH_TO_ANNOT>"),
 
     make_option(c("-v", "--verbose"),
@@ -23,48 +29,43 @@ option_list <- list(
 opt <- parse_args(OptionParser(option_list = option_list))
 
 # Reading the .fam file
-if(file.exists(opt$a)) {
-    if(opt$v) print(paste0("Reading the plink.annot.clean file", opt$a))
-    annot <- read.table(file = opt$a, header = T, sep = ' ')
-} else { stop(paste0("File '", opt$a, "' does not exist.")) }
+if(file.exists(opt$g)) {
+    if(opt$v) print(paste0("Reading the gene file ", opt$g))
+    genes <- read.table(file = opt$g, header = T, sep = ' ')
+} else { stop(paste0("File '", opt$g, "' does not exist.")) }
 
-#valid_annot <- annot[,2] != '.'
-annot <- annot[annot$ANNOT != '.', ]
-annot$anno <- 'no_annot'
-colnames(annot) <- c("var", "ID", "anno") # We use the colnames to have the "correct" name for the 2nd column of the groupFile
+genes <- genes[genes$ANNOT != '.', ]
+genes$ann_default <- 'no_annot'
+colnames(genes) <- c("var", "ID", "ann_default")
+
+# If an annotation file was given in the config, we complete the annotations:
+if(opt$a != "") {
+    if(opt$v) print(paste0("Annotation file present, reading ", opt$a))
+
+    annot <- read.table(file = opt$a, header = F, sep = " ", stringsAsFactor = FALSE)
+    colnames(annot) <- c("var", "ann")
+
+    genes_merged <- merge(x = genes, y = annot, by = "var", all.x = T, all.y = F)
+
+    #Replacing NA annotations with "no_annot":
+    genes_merged$ann[is.na(genes_merged$ann)] <- genes_merged$ann_default[is.na(genes_merged$ann)]
+    genes <- genes_merged[,c("var", "ID", "ann")]
+}
 
 # Group by the gene name "ID":
-annot <- aggregate(x = annot, by = list(annot$ID, annot$anno), FUN = paste, simplify = F)
-# Then group the dataframe by genes to have the variants and annotations and two different lines:
-annot <- annot[,c("Group.1", "var", "anno")]
+genes_var <- aggregate(var ~ ID, data = genes, FUN = paste, collapse = " ")
+genes_ann <- aggregate(ann ~ ID, data = genes, FUN = paste, collapse = " ")
 
-# Transforming lists into characters:
-annot$var <- as.character(annot$var)
-annot$anno <- as.character(annot$anno)
+genes_var$type <- "var"
+genes_ann$type <- "anno"
 
-# Removing unwanted characters (quotes and "c()"):
-annot$var <- paste(gsub(pattern = '"',    replacement = '', x = annot$var))
-annot$var <- paste(gsub(pattern = ',',    replacement = '', x = annot$var))
-annot$var <- paste(gsub(pattern = '\n',   replacement = '', x = annot$var))
-annot$var <- paste(gsub(pattern = 'c\\(', replacement = '', x = annot$var))
-annot$var <- paste(gsub(pattern = '\\)$', replacement = '', x = annot$var))
+colnames(genes_var) <- c("ID", "value", "type")
+colnames(genes_ann) <- c("ID", "value", "type")
 
-annot$anno <- paste(gsub(pattern = '"',    replacement = '', x = annot$anno))
-annot$anno <- paste(gsub(pattern = ',',    replacement = '', x = annot$anno))
-annot$anno <- paste(gsub(pattern = '\n',   replacement = '', x = annot$anno))
-annot$anno <- paste(gsub(pattern = 'c\\(', replacement = '', x = annot$anno))
-annot$anno <- paste(gsub(pattern = '\\)$', replacement = '', x = annot$anno))
-
-# Transforming the annotations from wide to long format:
-long_annot <- reshape(data = annot, 
-                      direction = "long", 
-                      v.names = "value", 
-                      varying = c("var", "anno"), 
-                      timevar = "type", 
-                      times = names(annot)[2:3])
-long_annot <- long_annot[,c(1,2,3)]
+long_genes <- rbind(genes_var[,c(1,3,2)],
+                    genes_ann[,c(1,3,2)])
 
 # Reordering by gene names:
-long_annot <- long_annot[order(long_annot$Group.1),]
+long_genes <- long_genes[order(long_genes$ID),]
 
-write.table(x = long_annot, file = 'saige.groupFile', quote = F, row.names = F, sep = ' ', col.names = F)
+write.table(x = long_genes, file = 'saige.groupFile', quote = F, row.names = F, sep = ' ', col.names = F)

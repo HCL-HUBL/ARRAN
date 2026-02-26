@@ -50,10 +50,13 @@ include { ManhattanPlot as ManhattanPlot_F }         from './modules/ManhattanPl
 // General options:
 params.plink_fileset    = ""
 params.covar_file       = ""                   // Path to file listing the covariates to be included in the model
-params.out_basename     = "arran_"             // Basename of the output files
-params.outdir           = "${launchDir}"       // Path to the output folder
+params.annot_file       = ""                   // (optional) path to the SNP annotations (format: "SNP annotation", space delimited)
 params.genome_build     = "hg19"               // Accepts 'hg19' or 'hg38': used to define the genes list and PAR regions to use
 params.trait_type       = "binary"             // Trait type, must be 'binary' or 'quantitative'
+
+// Output options:
+params.out_basename     = "arran_"             // Basename of the output files
+params.outdir           = "${launchDir}"       // Path to the output folder
 
 // QC options:
 params.qc_mind          = 0.05                 // Individuals with >5% missing genotypes will be removed
@@ -78,6 +81,7 @@ params.xwas_covar       = "PC1,PC2,PC3,PC4,PC5" // Covariates for the chrX analy
 
 // RVAT options:
 params.run_RVAT         = true                  // Boolean indicating whether to run the Rare Variants analysis or not
+params.saige_annot      = "no_annot"            // How to test the annotations (see annotation_in_groupTest in SAIGE)
 params.saige_covar      = "PC1,PC2,PC3,PC4,PC5" // List of all covariates to include in the model, comma separated
 params.saige_qcovar     = ""                    // List the covariates which are categorical  
 params.saige_regions    = ""                    // (optional) list of regions to analyse (bed format)
@@ -116,10 +120,10 @@ if(params.gwas_maf < 0)                     error("\nERROR in config: 'gwas_maf'
 if(params.xwas_alpha < 0)                   error("\nERROR in config: 'xwas_alpha' must be >= 0, current value '${params.xwas_alpha}'")
 if(params.admixture_K <= 0)                 error("\nERROR in config: 'admixture_K' must be > 0, current value '${params.admixture_K}'")
 
-
 // Initialising Channels based on params:
 plink_ch        = Channel.fromFilePairs(params.plink_fileset, size: 3)
 glist_ch        = Channel.fromPath("${projectDir}/data/glist-${params.genome_build}")
+annot_ch        = params.annot_file ? Channel.fromPath(params.annot_file) : []
 covar_file_ch   = Channel.fromPath(params.covar_file)
 remove_ch       = params.qc_remove ? Channel.fromPath(params.qc_remove) : []
 regions_ch      = params.saige_regions ? Channel.fromPath(params.saige_regions) : []
@@ -197,6 +201,7 @@ workflow SAIGE_RVAT {
         phenoFile_ch
         regions_ch
         glist
+        annot
     
     main:
         CreateOutputRVAT(autosomes_QCed, regions_ch)
@@ -205,7 +210,7 @@ workflow SAIGE_RVAT {
                           phenoFile_ch, 
                           "RVAT")
 
-        CreateGroupFile(CreateOutputRVAT.out.plink_RVAT, glist)
+        CreateGroupFile(CreateOutputRVAT.out.plink_RVAT, glist, annot)
 
         SaigeGeneAssoc(CreateOutputRVAT.out.plink_RVAT, 
                        SaigeFitNullModel.out.gmmat, 
@@ -293,6 +298,7 @@ workflow {
         SAIGE_RVAT(SplitAutosomesChrX.out.autosomes,
                    CreatePhenoFile.out.phenoFile,
                    regions_ch,
-                   glist_ch)
+                   glist_ch,
+                   annot_ch)
     }
 }
