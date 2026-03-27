@@ -145,8 +145,8 @@ workflow QC {
         
         HWEFlag(CreateOutputBaseQC.out.plink_QCed, params.qc_hwe)
 
-        CreateEigenvec(CreateOutputBaseQC.out.plink_QCed)
-        PlotPCA(CreateOutputBaseQC.out.plink_QCed, CreateEigenvec.out.eigenvec)
+        CreateEigenvec(CreateOutputBaseQC.out.plink_QCed_pruned)
+        PlotPCA(CreateOutputBaseQC.out.plink_QCed_pruned, CreateEigenvec.out.eigenvec)
 
     emit:
         plink_QCed          = CreateOutputBaseQC.out.plink_QCed
