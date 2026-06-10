@@ -1,6 +1,11 @@
 process BaseQC {
     publishDir "${params.outdir}/logs/",  pattern: "BaseQC.log", mode: 'copy'
 
+    label 'QC'
+    cpus 1
+    memory { 5.GB * task.attempt }
+    time { 5.minute * task.attempt }
+
     input:
         tuple val(plink_basename), path(plink_files)
         path(qc_remove)

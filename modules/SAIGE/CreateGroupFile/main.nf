@@ -4,6 +4,11 @@
 process CreateGroupFile {
     publishDir "${params.outdir}/saige/", mode: 'copy'
 
+    label 'GWAS'
+    cpus 1
+    memory { 2.GB * task.attempt }
+    time { 30.minute * task.attempt }
+
     input:
         tuple val(plink_basename), path(plink_files)
         path(glist)

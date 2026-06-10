@@ -257,7 +257,6 @@ workflow XWAS {
         QQPlot_F(XwasSNVsAssoc.out.xstrat_assoc, "P_F")
 }
 
-
 // Main workflow, calling all the other subworkflow:
 workflow {
     // Perform base Quality Control on the genotype data:

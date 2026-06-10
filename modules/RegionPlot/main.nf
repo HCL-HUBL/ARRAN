@@ -1,6 +1,11 @@
 process RegionPlot {
     publishDir "${params.outdir}/plots/", mode: 'copy'
 
+    label 'GWAS'
+    cpus 1
+    memory { 1.GB * task.attempt }
+    time { 5.minute * task.attempt }
+    
     input:
         tuple val(plink_basename), path(plink_files)
         path(summ_stats)

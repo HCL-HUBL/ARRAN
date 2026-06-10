@@ -1,6 +1,11 @@
 process SummaryStatistics {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "$it" }, mode: 'copy'
 
+    label 'GWAS'
+    cpus 1
+    memory { 100.MB * task.attempt }
+    time { 5.minute * task.attempt }
+    
     input:
         path(assoc_tsv)
         val(software)       //Software that was used to generate the assoc_tsv file

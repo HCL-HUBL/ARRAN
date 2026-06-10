@@ -3,7 +3,12 @@
 // Needs at least 2000 variants with a MAF > 0.01
 process CreateSparseGRM {
     publishDir "${params.outdir}/saige/", mode: 'copy'
-    
+
+    label 'GWAS'
+    cpus 10
+    memory { 1.GB * task.attempt }
+    time { 5.minute * task.attempt }
+
     input:
         tuple val(plink_pruned_basename), path(plink_pruned_files)
 

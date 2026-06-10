@@ -1,6 +1,11 @@
 process CreateOutputBaseQC {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
 
+    label 'QC'
+    cpus 1
+    memory { 500.MB * task.attempt }
+    time { 5.minute * task.attempt }
+
     input:
         tuple val(baseqc_basename), path(baseqc_files)
         path(prune_in)

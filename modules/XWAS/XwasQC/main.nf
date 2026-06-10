@@ -2,7 +2,12 @@
 // XWAS will filter variants which have significantly =/= MAFs between males and females in controls:
 process XwasQC {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "xwas/$it" }, mode: 'copy'
-    
+
+    label 'XWAS'
+    cpus 1
+    memory { 100.MB * task.attempt }
+    time { 5.minute * task.attempt }
+
     input:
         val(plink_chrX_basename)
         path(plink_chrX_bed)

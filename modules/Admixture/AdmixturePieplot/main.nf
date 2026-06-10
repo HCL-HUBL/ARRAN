@@ -1,6 +1,11 @@
 process AdmixturePieplot {
     publishDir "${params.outdir}/plots/", mode: 'copy'
 
+    label 'admixture'
+    cpus 1
+    memory { 200.MB * task.attempt }
+    time { 1.minute * task.attempt }
+
     input:
         path(admixture_table)
         path(eigenvec)

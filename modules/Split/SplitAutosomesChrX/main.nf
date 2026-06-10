@@ -3,6 +3,11 @@
 process SplitAutosomesChrX {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "split/$it" }, mode: 'copy'
 
+    label 'GWAS'
+    cpus 1
+    memory { 100.MB * task.attempt }
+    time { 5.minute * task.attempt }
+    
     input:
         tuple val(baseqced_basename), path(baseqced_files)
 

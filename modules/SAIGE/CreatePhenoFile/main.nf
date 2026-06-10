@@ -2,7 +2,12 @@
 // the phenotypes + covariates 
 process CreatePhenoFile {
     publishDir "${params.outdir}/saige/", mode: 'copy'
-    
+
+    label 'GWAS'
+    cpus 1
+    memory { 100.MB * task.attempt }
+    time { 5.minute * task.attempt }
+
     input:
         tuple val(plink_basename), path(plink_files)
         path(eigenvec)

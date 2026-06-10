@@ -1,1 +1,5 @@
 HCL-GWAS_20250507-140149.simg
+work/
+.nextflow/
+.nextflow.log
+test_dataset/arran_test_out/

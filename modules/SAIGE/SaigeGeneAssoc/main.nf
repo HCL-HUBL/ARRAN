@@ -4,6 +4,11 @@
 process SaigeGeneAssoc {
     publishDir "${params.outdir}/saige/", mode: 'copy'
 
+    label 'GWAS'
+    cpus 1
+    memory { 2.GB * task.attempt }
+    time { 10.hour * task.attempt }
+
     input:
         tuple val(plink_basename), path(plink_files)
         path(gmmat_file)

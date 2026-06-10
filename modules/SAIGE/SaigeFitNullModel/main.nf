@@ -3,6 +3,11 @@
 process SaigeFitNullModel {
     publishDir "${params.outdir}/saige/", mode: 'copy'
 
+    label 'GWAS'
+    cpus 10
+    memory { 2.GB * task.attempt }
+    time { 1.hour * task.attempt }
+
     input:
         tuple val(plink_basename), path(plink_files)
         path(phenofile)

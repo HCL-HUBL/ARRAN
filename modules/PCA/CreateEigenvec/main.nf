@@ -1,6 +1,11 @@
 process CreateEigenvec {
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
 
+    label 'QC'
+    cpus 1
+    memory { 500.MB * task.attempt }
+    time { 5.minute * task.attempt }
+
     input:
         tuple val(baseqced_basename), path(baseqced_files)
     

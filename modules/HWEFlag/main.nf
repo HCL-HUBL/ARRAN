@@ -1,8 +1,12 @@
 // Process used to flag problematic variants in term of HWE
 process HWEFlag {
     errorStrategy 'ignore'
-
     publishDir "${params.outdir}/", saveAs: { it.endsWith(".log") ? "logs/$it" : "QC/$it" }, mode: 'copy'
+
+    label 'QC'
+    cpus 1
+    memory 5.GB
+    time 1.hour
 
     input:
         tuple val(baseqc_basename), path(baseqc_files)

@@ -1,6 +1,11 @@
 process ManhattanPlot {
     publishDir "${params.outdir}/plots/", mode: 'copy'
 
+    label 'GWAS'
+    cpus 1
+    memory { 1.GB * task.attempt }
+    time { 5.minute * task.attempt }
+
     input:
         path(assoc_tsv)
         val(chr_col)
