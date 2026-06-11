@@ -3,7 +3,7 @@ process CreateOutputRVAT {
 
     label 'GWAS'
     cpus 1
-    memory { 100.MB * task.attempt }
+    memory { 500.MB * task.attempt }
     time { 5.minute * task.attempt }
     
     input:
