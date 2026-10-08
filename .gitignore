@@ -1,4 +1,4 @@
-HCL-GWAS_20250507-140149.simg
+confs/arran_SLURM_GRCh37.conf
 work/
 .nextflow/
 .nextflow.log
